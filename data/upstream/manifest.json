@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-09-07",
+  "sources": [
+    {
+      "name": "IANA Time Zone Database",
+      "version": "2026c",
+      "url": "https://www.iana.org/time-zones",
+      "license": "Public domain",
+      "files": [
+        {
+          "path": "data/upstream/iana/2026c/zone.tab",
+          "sha256": "7cc78ea166261b3dedf951cdd721051460851e6fcd96c12b8e3194cf25677f21"
+        },
+        {
+          "path": "data/upstream/iana/2026c/iso3166.tab",
+          "sha256": "837c80785080c8433fd9d4ea87e78f161ac7a40389301c5153d4f90198baeb2a"
+        }
+      ]
+    },
+    {
+      "name": "Unicode Common Locale Data Repository",
+      "version": "48.2",
+      "url": "https://cldr.unicode.org/index/downloads",
+      "license": "Unicode-3.0",
+      "usage": "Pinned English and Dutch country labels from cldr-localenames-full 48.2.0"
+    },
+    {
+      "name": "GeoNames Gazetteer",
+      "version": "cities500 snapshot 2026-09-07",
+      "url": "https://download.geonames.org/export/dump/",
+      "license": "CC-BY-4.0",
+      "files": [
+        {
+          "path": "data/upstream/geonames/2026-09-07/cities500.zip",
+          "sha256": "f626fec9dcaccf6781fc7e7046c7c58700efcb2535b93a470396bdfdae46404f"
+        },
+        {
+          "path": "data/upstream/geonames/2026-09-07/readme.txt",
+          "sha256": "b1957379b6c1242c700c98ac9a8aa0a09f56c3c0a50ee72175527005f48ef2c5"
+        }
+      ],
+      "usage": "235,684 cities with population over 500 or administrative seats"
+    },
+    {
+      "name": "Natural Earth",
+      "version": "4.1.0",
+      "url": "https://www.naturalearthdata.com/",
+      "license": "Public domain",
+      "usage": "Country geometry distributed through world-atlas 2.0.2"
+    },
+    {
+      "name": "ISO 3166 adapter",
+      "version": "i18n-iso-countries 7.14.0",
+      "url": "https://github.com/michaelwittig/node-i18n-iso-countries",
+      "license": "MIT",
+      "usage": "ISO numeric to alpha-2 conversion for Natural Earth geometry"
+    },
+    {
+      "name": "tzdb browser metadata adapter",
+      "version": "@vvo/tzdb 6.198.0",
+      "url": "https://github.com/vvo/tzdb",
+      "license": "MIT",
+      "usage": "City and alternative-name search enrichment"
+    },
+    {
+      "name": "IANA transition compiler",
+      "version": "moment-timezone 0.6.3 / tzdb 2026c",
+      "url": "https://momentjs.com/timezone/",
+      "license": "MIT",
+      "usage": "Build-time generation of deterministic 1970-2100 offset transitions"
+    },
+    {
+      "name": "Coordinate time-zone candidate data",
+      "version": "@photostructure/tz-lookup 11.6.1",
+      "url": "https://github.com/photostructure/tz-lookup",
+      "license": "CC0-1.0",
+      "usage": "Lazy, local-only coordinate-to-zone candidate lookup"
+    }
+  ]
+}
