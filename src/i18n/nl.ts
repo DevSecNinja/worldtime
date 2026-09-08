@@ -79,6 +79,8 @@ export const nl: Record<keyof typeof en, string> = {
   countryLookupDetails:
     'Breedtegraad, lengtegraad, je gekozen antwoordtaal, IP-adres en de oorsprong van deze app gaan naar OpenStreetMap Foundation Nominatim. De dienst stuurt adresgegevens terug; deze app leest alleen landnaam en landcode en slaat niets op. Bewaring door de provider volgt zijn privacybeleid. Als je weigert of de opzoeking mislukt, blijft handmatig zoeken werken. Het gevonden land overschrijft nooit je bevestigde tijdzone.',
   lookupCountry: 'Akkoord — zoek land op',
+  countryLookupLoading: 'Land opzoeken…',
+  countryLookupError: 'Land opzoeken is mislukt. Tijdzones zoeken blijft werken.',
   declineLookup: 'Nee bedankt',
   providerPolicy: 'Privacybeleid van de provider',
   locationError: 'Locatie was niet beschikbaar. Zoeken blijft werken.',

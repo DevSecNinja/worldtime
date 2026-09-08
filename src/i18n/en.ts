@@ -77,6 +77,8 @@ export const en = {
   countryLookupDetails:
     'Latitude, longitude, your selected response language, IP address, and this app’s origin go to OpenStreetMap Foundation Nominatim. It returns reverse-geocoded address metadata; this app reads only country name and code and stores nothing. Provider retention follows its privacy policy. If you decline or lookup fails, manual search still works. The country result never overrides your confirmed time zone.',
   lookupCountry: 'I agree — look up country',
+  countryLookupLoading: 'Looking up the country…',
+  countryLookupError: 'The country lookup failed. Time-zone search still works.',
   declineLookup: 'No thanks',
   providerPolicy: 'Provider privacy policy',
   locationError: 'Location was unavailable. Search still works.',

@@ -26,7 +26,7 @@ if ('caches' in globalThis) {
         )
         .map((name) => caches.delete(name)),
     )
-  ).catch((error) => console.warn('Unable to clean up an obsolete city cache.', error));
+  ).catch((error) => console.warn('Unable to clean up an obsolete runtime cache.', error));
 }
 
 const updateSW = registerSW({

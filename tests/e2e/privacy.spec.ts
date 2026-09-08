@@ -73,6 +73,21 @@ test('country lookup never overrides a different local time-zone candidate', asy
   await expect(page.getByText('America/Los_Angeles')).toBeVisible();
 });
 
+test('country lookup uses action-specific loading and failure messages', async ({ page, context }) => {
+  await context.route('https://nominatim.openstreetmap.org/**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({ status: 503, body: 'Unavailable' });
+  });
+  await page.goto('./');
+  await page.getByRole('combobox', { name: 'Event time zone' }).click();
+  await page.getByRole('option', { name: /Use my location/ }).click();
+  await page.getByRole('button', { name: 'Enable location services' }).click();
+  await page.getByRole('button', { name: /look up country/ }).click();
+  await expect(page.getByRole('button', { name: 'Looking up the country…' })).toBeVisible();
+  await expect(page.getByText('The country lookup failed. Time-zone search still works.'))
+    .toBeVisible();
+});
+
 test('Dutch and theme choices reset after a refresh', async ({ page }) => {
   await page.goto('./');
   await page.getByLabel('Language').selectOption('nl');

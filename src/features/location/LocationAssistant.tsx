@@ -95,7 +95,7 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
               </p>
               <div className='button-row'>
                 <button className='button secondary' type='button' onClick={lookupCountry}>
-                  {lookupStatus === 'loading' ? t('locating') : t('lookupCountry')}
+                  {lookupStatus === 'loading' ? t('countryLookupLoading') : t('lookupCountry')}
                 </button>
               </div>
               <details className='info-box'>
@@ -112,7 +112,7 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
               {country && <p className='status success' role='status'>{country}</p>}
               {lookupStatus === 'error' && (
                 <p className='status error' role='status'>
-                  {navigator.onLine ? t('locationError') : t('offlineLookup')}
+                  {navigator.onLine ? t('countryLookupError') : t('offlineLookup')}
                 </p>
               )}
             </div>
