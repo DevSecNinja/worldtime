@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "retrievedAt": "2026-09-07",
+  "retrievedAt": "2026-09-08",
   "sources": [
     {
       "name": "IANA Time Zone Database",
@@ -27,20 +27,23 @@
     },
     {
       "name": "GeoNames Gazetteer",
-      "version": "cities500 snapshot 2026-09-07",
+      "version": "cities500 snapshot 2026-09-08",
       "url": "https://download.geonames.org/export/dump/",
       "license": "CC-BY-4.0",
+      "retrievedAt": "2026-09-08",
+      "etag": "\"cf8eda-65aef04293be5\"",
+      "lastModified": "Tue, 08 Sep 2026 01:54:33 GMT",
+      "archive": {
+        "url": "https://download.geonames.org/export/dump/cities500.zip",
+        "sha256": "f3cda4f9d256d90045121fb8eebad3ed91695c32370ed93b50fbe0cb616e2bbd"
+      },
       "files": [
         {
-          "path": "data/upstream/geonames/2026-09-07/cities500.zip",
-          "sha256": "f626fec9dcaccf6781fc7e7046c7c58700efcb2535b93a470396bdfdae46404f"
-        },
-        {
-          "path": "data/upstream/geonames/2026-09-07/readme.txt",
+          "path": "data/upstream/geonames/readme.txt",
           "sha256": "b1957379b6c1242c700c98ac9a8aa0a09f56c3c0a50ee72175527005f48ef2c5"
         }
       ],
-      "usage": "235,684 cities with population over 500 or administrative seats"
+      "usage": "Cities with population over 500 or administrative seats"
     },
     {
       "name": "Natural Earth",

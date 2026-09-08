@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 
 import { useAppState } from '../../app/app-state';
+import { TimeInput } from '../../components/TimeInput';
 import type { EventPayload } from '../../domain/event';
 import { buildNativeShareData, buildShareUrl } from '../../domain/share-link';
 import {
   classifyWallTime,
   createEventPayload,
+  isValidEventName,
   type WallTimeResolution,
 } from '../../domain/temporal';
 import { LocationAssistant } from '../location/LocationAssistant';
@@ -29,6 +31,7 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
   const [timeZone, setTimeZone] = useState('');
   const [resolution, setResolution] = useState<WallTimeResolution | undefined>();
   const [shareUrl, setShareUrl] = useState('');
+  const [showLocation, setShowLocation] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'fallback'>('idle');
   const [nativeShareState, setNativeShareState] = useState<
     'idle' | 'shared' | 'fallback' | 'error'
@@ -42,12 +45,14 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
 
   const requiresResolution = classification?.kind === 'ambiguous'
     || classification?.kind === 'nonexistent';
+  const nameIsValid = isValidEventName(name);
   const canShare = Boolean(
     date
       && time
       && timeZone
       && classification
       && classification.kind !== 'invalid'
+      && nameIsValid
       && (!requiresResolution || resolution),
   );
 
@@ -130,13 +135,14 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
           <input
             id='event-name'
             value={name}
-            maxLength={120}
+            maxLength={240}
             aria-describedby='event-name-hint'
             onChange={(event) => {
               setName(event.target.value);
               resetResolution();
             }}
           />
+          {!nameIsValid && <p className='status error' role='alert'>{t('eventNameInvalid')}</p>}
         </div>
 
         <div className='field-grid'>
@@ -155,13 +161,19 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
             />
           </div>
           <div className='field'>
-            <label htmlFor='event-time'>{t('time')}</label>
-            <input
+            <label id='event-time-label'>{t('time')}</label>
+            <TimeInput
               id='event-time'
-              type='time'
               value={time}
-              onChange={(event) => {
-                setTime(event.target.value);
+              format={timeFormat}
+              labels={{
+                time: t('time'),
+                hour: t('hour'),
+                minute: t('minute'),
+                period: t('period'),
+              }}
+              onChange={(value) => {
+                setTime(value);
                 resetResolution();
               }}
             />
@@ -175,6 +187,8 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
             resetResolution();
           }}
           hint={t('timeZoneHint')}
+          includeCountries
+          onRequestLocation={() => setShowLocation(true)}
         />
 
         {classification?.kind === 'invalid' && (
@@ -224,12 +238,16 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
           </fieldset>
         )}
 
-        <LocationAssistant
-          onTimeZoneSelect={(value) => {
-            setTimeZone(value);
-            resetResolution();
-          }}
-        />
+        {showLocation && (
+          <LocationAssistant
+            onClose={() => setShowLocation(false)}
+            onTimeZoneSelect={(value) => {
+              setTimeZone(value);
+              setShowLocation(false);
+              resetResolution();
+            }}
+          />
+        )}
 
         <div className='share-actions'>
           <button

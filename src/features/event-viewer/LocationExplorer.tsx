@@ -1,17 +1,8 @@
-import {
-  Component,
-  type ErrorInfo,
-  lazy,
-  type ReactNode,
-  Suspense,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { Component, type ErrorInfo, lazy, type ReactNode, Suspense, useState } from 'react';
 
 import { useAppState } from '../../app/app-state';
-import { type CitySearchResult, searchCities } from '../../domain/city-search';
-import { getCountry, searchCountries } from '../../domain/timezone-search';
+import { getCountry } from '../../domain/timezone-search';
+import { LocationAssistant } from '../location/LocationAssistant';
 import { TimeZonePicker } from '../timezone-picker/TimeZonePicker';
 
 const GlobeExplorer = lazy(() => import('../globe/GlobeExplorer'));
@@ -41,43 +32,17 @@ class GlobeErrorBoundary extends Component<
 }
 
 export function LocationExplorer({ timeZone, onTimeZoneChange }: LocationExplorerProps) {
-  const { locale, t } = useAppState();
-  const [countryQuery, setCountryQuery] = useState('');
-  const [selectedCountryCode, setSelectedCountryCode] = useState('');
-  const [cityResults, setCityResults] = useState<CitySearchResult[]>([]);
+  const { t } = useAppState();
   const [showGlobe, setShowGlobe] = useState(false);
-  const countryResults = useMemo(
-    () => searchCountries(countryQuery, locale, 8),
-    [countryQuery, locale],
-  );
-  const selectedCountry = getCountry(selectedCountryCode);
+  const [showLocation, setShowLocation] = useState(false);
+  const [globeCountryCode, setGlobeCountryCode] = useState('');
+  const globeCountry = getCountry(globeCountryCode);
 
-  useEffect(() => {
-    let active = true;
-    searchCities(countryQuery, locale, 8)
-      .then((page) => {
-        if (active) setCityResults(page.results);
-      })
-      .catch(() => {
-        if (active) setCityResults([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [countryQuery, locale]);
-
-  const chooseCountry = (alpha2: string) => {
-    const country = getCountry(alpha2);
+  const chooseGlobeCountry = (countryCode: string) => {
+    const country = getCountry(countryCode);
     if (!country) return;
-    setSelectedCountryCode(alpha2);
-    setCountryQuery(country.names[locale]);
+    setGlobeCountryCode(countryCode);
     onTimeZoneChange(country.timeZones.length === 1 ? country.timeZones[0] : null);
-  };
-
-  const chooseCity = (city: CitySearchResult) => {
-    setSelectedCountryCode(city.countryCode);
-    setCountryQuery(`${city.name}, ${city.countryName}`);
-    onTimeZoneChange(city.timeZone);
   };
 
   return (
@@ -85,68 +50,26 @@ export function LocationExplorer({ timeZone, onTimeZoneChange }: LocationExplore
       <p className='eyebrow'>{t('compareTitle')}</p>
       <h2 id='explorer-title'>{t('compareTitle')}</h2>
       <p>{t('compareIntro')}</p>
-      <div className='field country-search'>
-        <label htmlFor='country-search'>{t('countryOrCity')}</label>
-        <input
-          id='country-search'
-          type='search'
-          value={countryQuery}
-          placeholder={t('searchCountryOrCity')}
-          onChange={(event) => {
-            if (selectedCountryCode) onTimeZoneChange(null);
-            setCountryQuery(event.target.value);
-            setSelectedCountryCode('');
-          }}
-        />
-        {countryQuery && !selectedCountry && (
-          <ul className='country-results'>
-            {countryResults.map((country) => (
-              <li key={country.alpha2}>
-                <button type='button' onClick={() => chooseCountry(country.alpha2)}>
-                  <span>{country.names[locale]}</span>
-                  <small>{country.alpha2} · {country.timeZones.length}</small>
-                </button>
-              </li>
-            ))}
-            {cityResults.map((city) => (
-              <li key={`city-${city.id}`}>
-                <button type='button' onClick={() => chooseCity(city)}>
-                  <span>{city.name}, {city.countryName}</span>
-                  <small>{city.timeZone}</small>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {selectedCountry && selectedCountry.timeZones.length > 1 && (
-        <div className='country-zone-choice'>
-          <p>{t('chooseTimeZone')}</p>
-          <div className='chip-row'>
-            {selectedCountry.timeZones.map((zone) => (
-              <button
-                className={`chip ${zone === timeZone ? 'selected' : ''}`}
-                type='button'
-                key={zone}
-                onClick={() => onTimeZoneChange(zone)}
-              >
-                {zone}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {selectedCountry?.requiresManualTimeZone && (
-        <p className='status warning'>{t('manualCountryZone')}</p>
-      )}
 
       <TimeZonePicker
         id='comparison-timezone'
         value={timeZone ?? ''}
         onChange={(zone) => onTimeZoneChange(zone || null)}
-        label={t('searchTimeZone')}
+        label={t('searchPlaceLabel')}
+        hint={t('searchPlaceHint')}
+        includeCountries
+        onRequestLocation={() => setShowLocation(true)}
       />
+
+      {showLocation && (
+        <LocationAssistant
+          onClose={() => setShowLocation(false)}
+          onTimeZoneSelect={(zone) => {
+            onTimeZoneChange(zone);
+            setShowLocation(false);
+          }}
+        />
+      )}
 
       {!showGlobe && (
         <button
@@ -178,9 +101,26 @@ export function LocationExplorer({ timeZone, onTimeZoneChange }: LocationExplore
             fallback={<div className='globe-placeholder globe-error'>{t('globeUnavailable')}</div>}
           >
             <Suspense fallback={<div className='globe-placeholder'>{t('globeLoading')}</div>}>
-              <GlobeExplorer onCountrySelect={chooseCountry} />
+              <GlobeExplorer onCountrySelect={chooseGlobeCountry} />
             </Suspense>
           </GlobeErrorBoundary>
+          {globeCountry && globeCountry.timeZones.length > 1 && (
+            <div className='country-zone-choice'>
+              <p>{t('chooseTimeZone')}</p>
+              <div className='chip-row'>
+                {globeCountry.timeZones.map((zone) => (
+                  <button
+                    className='chip'
+                    type='button'
+                    key={zone}
+                    onClick={() => onTimeZoneChange(zone)}
+                  >
+                    {zone}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>

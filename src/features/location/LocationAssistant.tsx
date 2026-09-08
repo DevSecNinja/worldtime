@@ -11,9 +11,10 @@ import {
 
 interface LocationAssistantProps {
   onTimeZoneSelect: (timeZone: string) => void;
+  onClose?: () => void;
 }
 
-export function LocationAssistant({ onTimeZoneSelect }: LocationAssistantProps) {
+export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssistantProps) {
   const { locale, t } = useAppState();
   const [status, setStatus] = useState<'idle' | 'locating' | 'ready' | 'error'>('idle');
   const [result, setResult] = useState<ZoneCandidates | null>(null);
@@ -51,8 +52,15 @@ export function LocationAssistant({ onTimeZoneSelect }: LocationAssistantProps) 
   };
 
   return (
-    <details className='location-assistant'>
-      <summary>{t('locationTitle')}</summary>
+    <section className='location-assistant location-panel' aria-labelledby='location-title'>
+      <div className='location-panel-heading'>
+        <h3 id='location-title'>{t('locationTitle')}</h3>
+        {onClose && (
+          <button type='button' className='icon-button' onClick={onClose} aria-label={t('close')}>
+            ×
+          </button>
+        )}
+      </div>
       <div className='details-body'>
         <p>{t('locationIntro')}</p>
         <button className='button secondary' type='button' onClick={locate}>
@@ -89,6 +97,10 @@ export function LocationAssistant({ onTimeZoneSelect }: LocationAssistantProps) 
                 <button className='button secondary' type='button' onClick={lookupCountry}>
                   {lookupStatus === 'loading' ? t('locating') : t('lookupCountry')}
                 </button>
+              </div>
+              <details className='info-box'>
+                <summary>{t('countryLookupMoreInfo')}</summary>
+                <p>{t('countryLookupDetails')}</p>
                 <a
                   href={COUNTRY_LOOKUP_PROVIDER.privacyUrl}
                   target='_blank'
@@ -96,7 +108,7 @@ export function LocationAssistant({ onTimeZoneSelect }: LocationAssistantProps) 
                 >
                   {t('providerPolicy')}
                 </a>
-              </div>
+              </details>
               {country && <p className='status success' role='status'>{country}</p>}
               {lookupStatus === 'error' && (
                 <p className='status error' role='status'>
@@ -107,6 +119,6 @@ export function LocationAssistant({ onTimeZoneSelect }: LocationAssistantProps) 
           </div>
         )}
       </div>
-    </details>
+    </section>
   );
 }

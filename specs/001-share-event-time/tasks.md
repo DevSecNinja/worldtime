@@ -184,8 +184,27 @@ caches for public assets only.
       coverage
 - [x] T048 Expand the primary event-viewer location field to country and city search in
       src/features/event-viewer/LocationExplorer.tsx
-- [x] T049 Display the interactive globe by default while preserving its close control and fallback
-      behavior
+- [x] T049 Display a globe preview by default while preserving on-demand interaction, close control,
+      and fallback behavior
+- [x] T050 Consolidate country, city, and IANA zone lookup into
+      src/features/timezone-picker/TimeZonePicker.tsx
+- [x] T051 Move location services behind the highlighted first picker option and simplify consent
+      details in src/features/location/LocationAssistant.tsx
+- [x] T052 Add browser-language ordering, robust 24-hour/AM-PM time entry, dark select styling, and
+      identical-time-card merging across src/
+- [x] T053 Replace first-letter city files with two-character shards and a prefix routing index in
+      scripts/generate-reference-data.mjs and src/domain/city-search.ts
+- [x] T054 Add the conditional GeoNames updater and monthly maintenance workflow in scripts/ and
+      .github/workflows/reference-data.yml
+- [x] T055 Adopt the central Pages, Cloudflare preview, and Release Please reusable workflows under
+      .github/workflows/
+- [x] T056 Expand injection, locale, location mismatch, shard efficiency, and merged-card coverage
+      under tests/
+- [x] T057 Move large source and generated datasets to a checksummed GitHub data release with local
+      bootstrap and packaging scripts
+- [x] T058 Add reference-data SHA-based cache busting and document the application, Workbox, and
+      data-release update layers
+- [x] T059 Address all open pull-request review threads and remove obsolete large tracked files
 
 ---
 

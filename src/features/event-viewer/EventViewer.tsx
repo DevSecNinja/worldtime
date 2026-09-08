@@ -8,7 +8,6 @@ import {
   formatSourceRepresentation,
   sourceRulesChanged,
 } from '../../domain/temporal';
-import { LocationAssistant } from '../location/LocationAssistant';
 import { LocationExplorer } from './LocationExplorer';
 
 function TimeCard({
@@ -58,6 +57,7 @@ export function EventViewer({ event, onCreateAnother }: {
     [event, comparisonTimeZone, deviceTimeZone, locale, timeFormat],
   );
   const rulesChanged = sourceRulesChanged(event);
+  const sameTimeContext = deviceTimeZone === event.sourceTimeZone && !rulesChanged;
 
   return (
     <main className='page-shell viewer-layout'>
@@ -68,21 +68,39 @@ export function EventViewer({ event, onCreateAnother }: {
       </section>
 
       <section className='time-grid' aria-label={event.name ?? t('genericEvent')}>
-        <TimeCard
-          label={t('localBadge')}
-          date={deviceDisplay.date}
-          time={deviceDisplay.time}
-          zone={deviceDisplay.zone}
-          offset={deviceDisplay.offset}
-          accent
-        />
-        <TimeCard
-          label={t('sourceTime')}
-          date={sourceDisplay.date}
-          time={sourceDisplay.time}
-          zone={sourceDisplay.zone}
-          offset={event.sourceOffset}
-        />
+        {sameTimeContext
+          ? (
+            <div className='same-time-card'>
+              <TimeCard
+                label={t('sameTimeLabel')}
+                date={deviceDisplay.date}
+                time={deviceDisplay.time}
+                zone={deviceDisplay.zone}
+                offset={deviceDisplay.offset}
+                accent
+              />
+              <p>{t('sameTimeInfo')}</p>
+            </div>
+          )
+          : (
+            <>
+              <TimeCard
+                label={t('localBadge')}
+                date={deviceDisplay.date}
+                time={deviceDisplay.time}
+                zone={deviceDisplay.zone}
+                offset={deviceDisplay.offset}
+                accent
+              />
+              <TimeCard
+                label={t('sourceTime')}
+                date={sourceDisplay.date}
+                time={sourceDisplay.time}
+                zone={sourceDisplay.zone}
+                offset={event.sourceOffset}
+              />
+            </>
+          )}
         {comparisonTimeZone && comparisonTimeZone !== deviceTimeZone && (
           <TimeCard
             label={t('selectedBadge')}
@@ -101,12 +119,6 @@ export function EventViewer({ event, onCreateAnother }: {
           timeZone={comparisonTimeZone}
           onTimeZoneChange={setComparisonTimeZone}
         />
-        <aside className='glass-card location-card'>
-          <LocationAssistant
-            onTimeZoneSelect={(zone) => setComparisonTimeZone(zone)}
-          />
-          <p className='privacy-mini'>{t('creatorIntro')}</p>
-        </aside>
       </div>
 
       <button className='button ghost create-another' type='button' onClick={onCreateAnother}>

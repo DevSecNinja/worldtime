@@ -41,7 +41,7 @@ or user-data caches. All external assets self-hosted. Coordinates may leave the 
 a separately consented reverse-geocoding request.
 
 **Scale/Scope**: Two primary views, English and Dutch, 419 supported zones, 249 ISO countries plus
-Kosovo, 235,684 GeoNames cities, one optional reverse-geocoder, and one lazy-loaded globe
+Kosovo, 235,694 GeoNames cities, one optional reverse-geocoder, and one lazy-loaded globe
 
 ## Constitution Check
 
@@ -120,8 +120,9 @@ tests/
 ```
 
 **Structure Decision**: Use one Vite application with pure domain modules separated from feature UI.
-Generated public datasets are committed for reproducible, offline builds; the generation script and
-provenance manifest remain alongside them. Optional location and globe code is dynamically imported.
+Large source and generated datasets are distributed as a checksummed, versioned GitHub prerelease
+asset pinned by `reference-data.json`; only small provenance/source metadata is committed. Optional
+location and globe code is dynamically imported.
 
 ## Complexity Tracking
 

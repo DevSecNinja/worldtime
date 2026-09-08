@@ -7,9 +7,10 @@ const resources = { en, nl };
 export type MessageKey = keyof typeof en;
 
 export function browserLocale(): Locale {
-  return navigator.languages.some((language) => language.toLowerCase().startsWith('nl'))
-    ? 'nl'
-    : 'en';
+  const preferred = navigator.languages
+    .map((language) => language.toLowerCase())
+    .find((language) => language.startsWith('en') || language.startsWith('nl'));
+  return preferred?.startsWith('nl') ? 'nl' : 'en';
 }
 
 export function translate(locale: Locale, key: MessageKey): string {

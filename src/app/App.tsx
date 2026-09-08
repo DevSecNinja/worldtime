@@ -76,7 +76,7 @@ export function App() {
       {route.kind === 'invalid' && (
         <main className='page-shell error-page'>
           <section className='glass-card'>
-            <p className='eyebrow'>404 · TIME DRIFT</p>
+            <p className='eyebrow'>{t('invalidLinkEyebrow')}</p>
             <h1>{t('invalidLinkTitle')}</h1>
             <p>{t(errorMessageKeys[route.error])}</p>
             <button className='button primary' type='button' onClick={createAnother}>

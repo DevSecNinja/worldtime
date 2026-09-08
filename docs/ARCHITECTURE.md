@@ -39,15 +39,23 @@ identifier for future interpretation.
 
 - vendored IANA 2026c `zone.tab` and `iso3166.tab`;
 - IANA 2026c transition data from pinned build-time `moment-timezone`;
-- 235,684 cities from the pinned GeoNames cities500 snapshot, sharded by normalized first character
-  for responsive offline search;
+- 235,694 cities from the pinned GeoNames cities500 snapshot, placed in two-character ASCII shards
+  and routed through a compact native-name prefix index for responsive offline search;
 - supplemental time-zone search enrichment from `@vvo/tzdb`;
 - ISO numeric mapping from `i18n-iso-countries`;
 - Natural Earth geometry from `world-atlas`.
 
-It writes deterministic JSON and a provenance manifest. No build depends on a live third-party data
-endpoint. Unit tests validate hashes and every country, city, and zone; browser tests validate the
-complete catalog and every generated event link.
+It writes deterministic JSON and a provenance manifest, then packages both public and build-time
+datasets into a compressed GitHub prerelease asset. `reference-data.json` pins the release tag,
+asset name, SHA-256, generation date, and city count. No regular build depends on a live third-party
+data endpoint. Unit tests validate hashes and every country, city, and zone; browser tests validate
+the complete catalog and every generated event link.
+
+The regular build downloads the checksummed GitHub release asset and never contacts GeoNames. A
+monthly maintenance workflow first sends a conditional HEAD request with the committed ETag and
+Last-Modified values. It downloads the archive only when upstream metadata changes, publishes a new
+data prerelease, and opens a pull request containing only the small source manifest and release
+pointer.
 
 ## Privacy boundaries
 
@@ -71,19 +79,32 @@ Security Policy and referrer policy. A later Cloudflare Pages deployment should 
 
 ## Progressive enhancement
 
-Native date/time inputs and an ARIA combobox provide the baseline. The 3D globe is dynamically
-imported, uses same-origin Natural Earth geometry, and is excluded from the precache. Search remains
-available when WebGL, dragging, motion, bandwidth, or assistive technology make the globe
-unsuitable.
+The native date input, accessible segmented time control, and ARIA combobox provide the baseline.
+The time control follows the ephemeral 24-hour/AM-PM setting rather than depending on operating
+system picker presentation. The 3D globe is dynamically imported, uses same-origin Natural Earth
+geometry, and is excluded from the precache. Search remains available when WebGL, dragging, motion,
+bandwidth, or assistive technology make the globe unsuitable.
 
 ## Offline behavior
 
-Workbox precaches the shell, localization, search catalog, and pinned transition rules. The globe
-bundle and geometry enter a dedicated cache only after use. Reverse geocoding is network-only and
-fails back to local search.
+Workbox precaches the shell, localization, country/time-zone catalog, and pinned transition rules.
+City prefix/data shards enter a dedicated runtime cache only after the corresponding search, so the
+first install does not download the full catalog and previously searched cities remain available
+offline. The globe bundle and geometry also enter a dedicated cache only after use. Reverse
+geocoding is network-only and fails back to local search.
 
 Update installation is prompt-based so an automatic refresh cannot discard an in-progress event
 draft.
+
+## Cache busting
+
+- Vite content-hashes executable and stylesheet filenames.
+- Workbox records content revisions for the HTML shell, manifest, icons, and public reference
+  metadata, deletes superseded precaches, and prompts before activating an update.
+- `reference-data.json` pins the SHA-256 of the compressed data release.
+- The first 12 characters of that SHA are part of the runtime city-cache name. A new data release
+  therefore fetches fresh shards and the application removes obsolete city caches.
+- Optional globe chunks are content-hashed and geometry is isolated in its own runtime cache.
 
 ## Deployment portability
 

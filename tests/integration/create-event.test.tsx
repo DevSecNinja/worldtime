@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import vilaCities from '../../public/data/generated/cities/v.json';
+import vilaCities from '../../public/data/generated/cities/vi.json';
+import cityPrefixes from '../../public/data/generated/city-prefixes/v.json';
 import { AppStateProvider } from '../../src/app/app-state';
 import { CreateEvent } from '../../src/features/create-event/CreateEvent';
 
@@ -39,12 +40,16 @@ describe('event creation flow', () => {
 
   it('finds a GeoNames city outside the curated time-zone metadata', async () => {
     const user = userEvent.setup();
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(vilaCities), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (request) => {
+      const url = String(request);
+      return new Response(
+        JSON.stringify(url.includes('city-prefixes') ? cityPrefixes : vilaCities),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    });
     render(
       <AppStateProvider>
         <CreateEvent />
@@ -69,8 +74,8 @@ describe('event creation flow', () => {
     );
     await user.clear(screen.getByLabelText('Date'));
     await user.type(screen.getByLabelText('Date'), '2026-10-25');
-    await user.clear(screen.getByLabelText('Time'));
-    await user.type(screen.getByLabelText('Time'), '02:30');
+    await user.selectOptions(screen.getByLabelText('Hour'), '2');
+    await user.selectOptions(screen.getByLabelText('Minute'), '30');
     const picker = screen.getByRole('combobox', { name: 'Event time zone' });
     await user.type(picker, 'ams');
     await user.click(screen.getByRole('option', { name: /Europe\/Amsterdam/ }));

@@ -67,4 +67,18 @@ describe('share-link contract', () => {
     const twelveHour = buildNativeShareData(event, 'en', url, 'h12');
     expect(twelveHour.text).toMatch(/9:30 AM/i);
   });
+
+  it('keeps markup-like event names inert and rejects unsafe lengths and controls', () => {
+    const markup = '<img src=x onerror=alert(1)>';
+    const event = createEventPayload(markup, '2026-09-08T09:30', 'Europe/Amsterdam');
+    expect(parseEventFragment(serializeEvent(event))).toEqual({ ok: true, event });
+    expect(() => createEventPayload('a'.repeat(121), '2026-09-08T09:30', 'Europe/Amsterdam'))
+      .toThrow(/too long/);
+    expect(() => createEventPayload('unsafe\u0000name', '2026-09-08T09:30', 'Europe/Amsterdam'))
+      .toThrow(/control/);
+    expect(() => createEventPayload('unsafe\u0085name', '2026-09-08T09:30', 'Europe/Amsterdam'))
+      .toThrow(/control/);
+    expect(() => createEventPayload('unsafe\u202ename', '2026-09-08T09:30', 'Europe/Amsterdam'))
+      .toThrow(/control/);
+  });
 });

@@ -2,7 +2,12 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { useAppState } from '../../app/app-state';
 import { type CitySearchResult, searchCities } from '../../domain/city-search';
-import { countryNamesForZone, searchTimeZones } from '../../domain/timezone-search';
+import {
+  countryNamesForZone,
+  getCountry,
+  searchCountries,
+  searchTimeZones,
+} from '../../domain/timezone-search';
 
 interface TimeZonePickerProps {
   value: string;
@@ -11,7 +16,31 @@ interface TimeZonePickerProps {
   hint?: string;
   id?: string;
   autoFocus?: boolean;
+  includeCountries?: boolean;
+  onRequestLocation?: () => void;
 }
+
+type PickerOption =
+  | {
+    kind: 'location';
+    key: 'location';
+    title: string;
+    subtitle: string;
+  }
+  | {
+    kind: 'country';
+    key: string;
+    countryCode: string;
+    title: string;
+    subtitle: string;
+  }
+  | {
+    kind: 'place';
+    key: string;
+    timeZone: string;
+    title: string;
+    subtitle: string;
+  };
 
 export function TimeZonePicker({
   value,
@@ -20,6 +49,8 @@ export function TimeZonePicker({
   hint,
   id,
   autoFocus = false,
+  includeCountries = false,
+  onRequestLocation,
 }: TimeZonePickerProps) {
   const generatedId = useId();
   const inputId = id ?? `timezone-${generatedId}`;
@@ -32,28 +63,51 @@ export function TimeZonePicker({
   const [cityResults, setCityResults] = useState<CitySearchResult[]>([]);
   const [cityTotal, setCityTotal] = useState(0);
   const [cityLimit, setCityLimit] = useState(12);
+  const [selectedCountryCode, setSelectedCountryCode] = useState('');
   const userClearedSelection = useRef(false);
   const zoneResults = useMemo(() => searchTimeZones(query, 8), [query]);
-  const options = useMemo(() => {
-    return [
-      ...zoneResults.map((zone) => ({
-        key: `zone-${zone.id}`,
-        timeZone: zone.id,
-        title: zone.id,
-        subtitle: [
-          zone.cities.slice(0, 3).join(', '),
-          countryNamesForZone(zone, locale),
-        ].filter(Boolean).join(' · '),
-      })),
-      ...cityResults
-        .map((city) => ({
-          key: `city-${city.id}`,
-          timeZone: city.timeZone,
-          title: `${city.name}, ${city.countryName}`,
-          subtitle: city.timeZone,
-        })),
-    ];
-  }, [cityResults, locale, zoneResults]);
+  const countryResults = useMemo(
+    () => includeCountries ? searchCountries(query, locale, 5) : [],
+    [includeCountries, locale, query],
+  );
+  const selectedCountry = getCountry(selectedCountryCode);
+
+  const options = useMemo<PickerOption[]>(() => [
+    ...(onRequestLocation && !query
+      ? [{
+        kind: 'location' as const,
+        key: 'location' as const,
+        title: t('locationTitle'),
+        subtitle: t('locationOptionHint'),
+      }]
+      : []),
+    ...countryResults.map((country) => ({
+      kind: 'country' as const,
+      key: `country-${country.alpha2}`,
+      countryCode: country.alpha2,
+      title: country.names[locale],
+      subtitle: country.timeZones.length > 1
+        ? t('countryNeedsZone')
+        : country.timeZones[0] ?? t('manualCountryZone'),
+    })),
+    ...zoneResults.map((zone) => ({
+      kind: 'place' as const,
+      key: `zone-${zone.id}`,
+      timeZone: zone.id,
+      title: zone.id,
+      subtitle: [
+        zone.cities.slice(0, 3).join(', '),
+        countryNamesForZone(zone, locale),
+      ].filter(Boolean).join(' · '),
+    })),
+    ...cityResults.map((city) => ({
+      kind: 'place' as const,
+      key: `city-${city.id}`,
+      timeZone: city.timeZone,
+      title: `${city.name}, ${city.countryName}`,
+      subtitle: city.timeZone,
+    })),
+  ], [cityResults, countryResults, locale, onRequestLocation, query, t, zoneResults]);
 
   useEffect(() => {
     if (userClearedSelection.current && !value) {
@@ -83,10 +137,35 @@ export function TimeZonePicker({
     };
   }, [cityLimit, locale, query]);
 
-  const choose = (timeZone: string) => {
+  const chooseTimeZone = (timeZone: string) => {
+    userClearedSelection.current = false;
+    setSelectedCountryCode('');
     onChange(timeZone);
     setQuery(timeZone);
     setOpen(false);
+  };
+
+  const chooseOption = (option: PickerOption) => {
+    if (option.kind === 'location') {
+      setOpen(false);
+      onRequestLocation?.();
+      return;
+    }
+    if (option.kind === 'country') {
+      const country = getCountry(option.countryCode);
+      if (!country) return;
+      setSelectedCountryCode(country.alpha2);
+      setQuery(country.names[locale]);
+      setOpen(false);
+      if (country.timeZones.length === 1) {
+        chooseTimeZone(country.timeZones[0]);
+      } else {
+        userClearedSelection.current = true;
+        onChange('');
+      }
+      return;
+    }
+    chooseTimeZone(option.timeZone);
   };
 
   return (
@@ -111,7 +190,7 @@ export function TimeZonePicker({
             ? `${inputId}-option-${activeIndex}`
             : undefined}
           aria-describedby={hint ? hintId : undefined}
-          placeholder={t('searchTimeZone')}
+          placeholder={includeCountries ? t('searchPlace') : t('searchTimeZone')}
           onFocus={() => setOpen(true)}
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
           onChange={(event) => {
@@ -119,6 +198,7 @@ export function TimeZonePicker({
             setOpen(true);
             setActiveIndex(0);
             setCityLimit(12);
+            setSelectedCountryCode('');
             if (value && event.target.value !== value) {
               userClearedSelection.current = true;
               onChange('');
@@ -136,7 +216,7 @@ export function TimeZonePicker({
               setActiveIndex((current) => Math.max(current - 1, 0));
             } else if (event.key === 'Enter' && open && options[activeIndex]) {
               event.preventDefault();
-              choose(options[activeIndex].timeZone);
+              chooseOption(options[activeIndex]);
             } else if (event.key === 'Escape') {
               setOpen(false);
             }
@@ -151,17 +231,22 @@ export function TimeZonePicker({
               id={`${inputId}-option-${index}`}
               key={option.key}
               role='option'
-              aria-selected={option.timeZone === value}
-              className={index === activeIndex ? 'active' : undefined}
+              aria-selected={option.kind === 'place' && option.timeZone === value}
+              className={[
+                index === activeIndex ? 'active' : '',
+                option.kind === 'location' ? 'location-option' : '',
+              ].filter(Boolean).join(' ')}
               onMouseDown={(event) => event.preventDefault()}
               onMouseEnter={() => setActiveIndex(index)}
-              onClick={() => choose(option.timeZone)}
+              onClick={() => chooseOption(option)}
             >
               <span>
                 <strong>{option.title}</strong>
                 <small>{option.subtitle}</small>
               </span>
-              {option.timeZone === value && <span aria-hidden='true'>✓</span>}
+              {option.kind === 'place' && option.timeZone === value && (
+                <span aria-hidden='true'>✓</span>
+              )}
             </li>
           ))}
           {cityTotal > cityResults.length && (
@@ -176,6 +261,26 @@ export function TimeZonePicker({
             </li>
           )}
         </ul>
+      )}
+      {selectedCountry && selectedCountry.timeZones.length > 1 && (
+        <div className='country-zone-choice'>
+          <p>{t('chooseTimeZone')}</p>
+          <div className='chip-row'>
+            {selectedCountry.timeZones.map((zone) => (
+              <button
+                className='chip'
+                type='button'
+                key={zone}
+                onClick={() => chooseTimeZone(zone)}
+              >
+                {zone}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {selectedCountry?.requiresManualTimeZone && (
+        <p className='status warning'>{t('manualCountryZone')}</p>
       )}
     </div>
   );

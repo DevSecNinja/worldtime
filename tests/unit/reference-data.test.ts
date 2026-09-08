@@ -4,10 +4,11 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import referenceData from '../../reference-data.json';
 import countries from '../../src/data/generated/countries.json';
 import provenance from '../../src/data/generated/provenance.json';
 import timeZones from '../../src/data/generated/timezones.json';
-import { cityMatchesQuery, cityShardFor } from '../../src/domain/city-search';
+import { cityMatchesQuery, cityShardForAsciiName } from '../../src/domain/city-search';
 import type { CityRecord } from '../../src/domain/event';
 
 describe('generated reference data', () => {
@@ -58,6 +59,9 @@ describe('generated reference data', () => {
     }
     expect(provenance.counts.timeZones).toBe(timeZones.length);
     expect(provenance.counts.countries).toBe(countries.length);
+    expect(referenceData.cityCount).toBe(provenance.counts.cities);
+    expect(referenceData.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(referenceData.releaseTag).toMatch(/^data-\d{4}-\d{2}-\d{2}/);
   });
 
   it('maps every GeoNames city to a known country and time zone', async () => {
@@ -66,9 +70,20 @@ describe('generated reference data', () => {
     const countryCodes = new Set(countries.map((country) => country.alpha2));
     const zoneIds = new Set(timeZones.map((zone) => zone.id));
     const cityIds = new Set<number>();
-    const nativeNameRouted = new Set<number>();
-    const asciiNameRouted = new Set<number>();
     const invalid: string[] = [];
+    const prefixDirectory = resolve(process.cwd(), 'public/data/generated/city-prefixes');
+    const prefixFiles = await readdir(prefixDirectory);
+    const prefixEntries = (
+      await Promise.all(
+        prefixFiles.map(async (file) =>
+          JSON.parse(await readFile(resolve(prefixDirectory, file), 'utf8')) as [
+            string,
+            string[],
+          ][]
+        ),
+      )
+    ).flat();
+    const prefixMap = new Map(prefixEntries);
 
     for (const file of files) {
       const records = JSON.parse(
@@ -83,15 +98,19 @@ describe('generated reference data', () => {
         if (!cityMatchesQuery(record, record[1], 'en')) {
           invalid.push(`${record[1]} cannot be found by its displayed name`);
         }
-        if (cityShardFor(record[1]) === bucket) nativeNameRouted.add(record[0]);
-        if (cityShardFor(record[2]) === bucket) asciiNameRouted.add(record[0]);
+        if (cityShardForAsciiName(record[2]) !== bucket) {
+          invalid.push(`${record[1]} is stored in incorrect shard ${bucket}`);
+        }
+        for (const token of record[6]) {
+          const prefix = [...token].slice(0, 4).join('');
+          if (!prefixMap.get(prefix)?.includes(bucket)) {
+            invalid.push(`${record[1]} token ${token} cannot route to ${bucket}`);
+          }
+        }
       }
     }
 
     expect(invalid).toEqual([]);
-    expect(cityIds.size).toBe(235_684);
-    expect(nativeNameRouted.size).toBe(cityIds.size);
-    expect(asciiNameRouted.size).toBe(cityIds.size);
     expect(provenance.counts.cities).toBe(cityIds.size);
     expect(provenance.counts.unsupportedCities).toBe(0);
   });

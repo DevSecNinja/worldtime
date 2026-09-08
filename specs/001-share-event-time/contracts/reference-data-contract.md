@@ -5,6 +5,10 @@
 `scripts/generate-reference-data.mjs` produces deterministic JSON artifacts consumed by the
 application and tests.
 
+Large sources and generated outputs MUST be packaged into a checksummed GitHub data prerelease.
+`reference-data.json` is the committed pointer used by development, CI, and deployment. The
+repository stores only small source and provenance metadata.
+
 ## Required provenance
 
 Each generated release records:

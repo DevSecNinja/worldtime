@@ -1,7 +1,21 @@
 import type { CityRecord, Locale } from './event';
+import { CITY_CACHE_NAME } from './reference-data';
 import { getCountry } from './timezone-search';
 
+type CityPrefixEntry = [prefix: string, shards: string[]];
+
 const shardCache = new Map<string, Promise<CityRecord[]>>();
+const prefixIndexCache = new Map<string, Promise<CityPrefixEntry[]>>();
+
+const cacheCityAsset = async (url: URL, response: Response) => {
+  if (!('caches' in globalThis)) return;
+  try {
+    const cache = await caches.open(CITY_CACHE_NAME);
+    await cache.put(url, response);
+  } catch (error) {
+    console.warn('Unable to cache public city search data for offline use.', error);
+  }
+};
 
 export interface CitySearchResult {
   id: number;
@@ -25,44 +39,32 @@ export const normalizePlaceName = (value: string): string =>
     .trim()
     .toLocaleLowerCase('en');
 
-export function cityShardFor(query: string): string | null {
+export function cityShardForAsciiName(asciiName: string): string | null {
+  const compact = normalizePlaceName(asciiName).replace(/[^a-z0-9]/g, '');
+  if (!compact) return null;
+  return compact.length >= 2 ? compact.slice(0, 2) : `${compact}_`;
+}
+
+export function cityPrefixGroup(query: string): string | null {
   const normalized = normalizePlaceName(query);
-  if (!normalized) return null;
+  if (normalized.length < 2) return null;
   return /^[a-z0-9]/.test(normalized) ? normalized[0] : '_';
 }
 
-const editDistanceAtMostOne = (left: string, right: string): boolean => {
-  if (Math.abs(left.length - right.length) > 1) return false;
-  let leftIndex = 0;
-  let rightIndex = 0;
-  let edits = 0;
-  while (leftIndex < left.length && rightIndex < right.length) {
-    if (left[leftIndex] === right[rightIndex]) {
-      leftIndex += 1;
-      rightIndex += 1;
-      continue;
-    }
-    edits += 1;
-    if (edits > 1) return false;
-    if (left.length > right.length) leftIndex += 1;
-    else if (right.length > left.length) rightIndex += 1;
-    else {
-      leftIndex += 1;
-      rightIndex += 1;
-    }
+export function cityShardCandidates(
+  prefixEntries: CityPrefixEntry[],
+  query: string,
+): string[] {
+  const normalized = normalizePlaceName(query);
+  if (normalized.length < 2) return [];
+  const queryPrefix = [...normalized].slice(0, 4).join('');
+  const directShards = new Set<string>();
+  for (const [prefix, candidates] of prefixEntries) {
+    const direct = prefix.startsWith(queryPrefix) || queryPrefix.startsWith(prefix);
+    if (direct) { for (const shard of candidates) directShards.add(shard); }
   }
-  if (leftIndex < left.length || rightIndex < right.length) edits += 1;
-  return edits <= 1;
-};
-
-const isFuzzyPrefix = (token: string, query: string): boolean => {
-  if (query.length < 3) return false;
-  const lengths = token.length < query.length
-    ? [token.length]
-    : [query.length, Math.min(token.length, query.length + 1)];
-  return [...new Set(lengths)]
-    .some((length) => editDistanceAtMostOne(token.slice(0, length), query));
-};
+  return [...directShards].sort();
+}
 
 const matchRank = (record: CityRecord, query: string, locale: Locale): number | null => {
   const country = getCountry(record[3]);
@@ -80,7 +82,6 @@ const matchRank = (record: CityRecord, query: string, locale: Locale): number | 
       if (countryTerms.some((term) => term.startsWith(qualifier))) return 0;
     }
     if (token.startsWith(query)) return 1;
-    if (isFuzzyPrefix(token, query)) return 2 + Math.min(token.length, 999) / 1_000;
   }
   return null;
 };
@@ -117,14 +118,7 @@ export function searchCityRecords(
     .values()];
   const exact = unique.filter(({ rank }) => rank === 0);
   const prefix = unique.filter(({ rank }) => rank === 1);
-  const fuzzy = unique.filter(({ rank }) => rank >= 2);
-  const ordered = [
-    ...exact,
-    ...prefix.slice(0, 4),
-    ...fuzzy.slice(0, 8),
-    ...prefix.slice(4),
-    ...fuzzy.slice(8),
-  ];
+  const ordered = [...exact, ...prefix];
 
   return {
     total: ordered.length,
@@ -139,21 +133,51 @@ export function searchCityRecords(
   };
 }
 
+const loadPrefixIndex = (group: string) => {
+  let request = prefixIndexCache.get(group);
+  if (request) return request;
+  const url = new URL(`data/generated/city-prefixes/${group}.json`, document.baseURI);
+  request = fetch(url)
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`City prefix request failed: ${response.status}`);
+      await cacheCityAsset(url, response.clone());
+      return response.json() as Promise<CityPrefixEntry[]>;
+    })
+    .catch((error) => {
+      prefixIndexCache.delete(group);
+      throw error;
+    });
+  prefixIndexCache.set(group, request);
+  return request;
+};
+
+const loadShard = (shard: string) => {
+  let request = shardCache.get(shard);
+  if (!request) {
+    const url = new URL(`data/generated/cities/${shard}.json`, document.baseURI);
+    request = fetch(url)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`City index request failed: ${response.status}`);
+        await cacheCityAsset(url, response.clone());
+        return response.json() as Promise<CityRecord[]>;
+      })
+      .catch((error) => {
+        shardCache.delete(shard);
+        throw error;
+      });
+    shardCache.set(shard, request);
+  }
+  return request;
+};
+
 export async function searchCities(
   query: string,
   locale: Locale,
   limit = 12,
 ): Promise<CitySearchPage> {
-  const shard = cityShardFor(query);
-  if (!shard) return { results: [], total: 0 };
-  let request = shardCache.get(shard);
-  if (!request) {
-    request = fetch(new URL(`data/generated/cities/${shard}.json`, document.baseURI))
-      .then((response) => {
-        if (!response.ok) throw new Error(`City index request failed: ${response.status}`);
-        return response.json() as Promise<CityRecord[]>;
-      });
-    shardCache.set(shard, request);
-  }
-  return searchCityRecords(await request, query, locale, limit);
+  const group = cityPrefixGroup(query);
+  if (!group) return { results: [], total: 0 };
+  const shards = cityShardCandidates(await loadPrefixIndex(group), query);
+  const records = (await Promise.all(shards.map(loadShard))).flat();
+  return searchCityRecords(records, query, locale, limit);
 }

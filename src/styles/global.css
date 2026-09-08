@@ -262,6 +262,44 @@ h3 {
   border-radius: 999px;
 }
 
+.compact-control select option,
+.time-input select option {
+  color: #f4f8ff;
+  background: #111b33;
+}
+
+.compact-control select option:checked,
+.time-input select option:checked {
+  color: #fff;
+  background: #28436f;
+}
+
+:root[data-theme="light"] .compact-control select option,
+:root[data-theme="light"] .time-input select option {
+  color: #13203a;
+  background: #f7faff;
+}
+
+:root[data-theme="light"] .compact-control select option:checked,
+:root[data-theme="light"] .time-input select option:checked {
+  color: #10213f;
+  background: #cfe7f6;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] .compact-control select option,
+  :root[data-theme="system"] .time-input select option {
+    color: #13203a;
+    background: #f7faff;
+  }
+
+  :root[data-theme="system"] .compact-control select option:checked,
+  :root[data-theme="system"] .time-input select option:checked {
+    color: #10213f;
+    background: #cfe7f6;
+  }
+}
+
 .page-shell {
   position: relative;
   z-index: 1;
@@ -437,6 +475,28 @@ h3 {
     background 160ms ease;
 }
 
+.time-input {
+  display: grid;
+  grid-template-columns:
+    minmax(72px, 1fr) auto minmax(72px, 1fr) minmax(86px, auto);
+  gap: 8px;
+  align-items: center;
+}
+
+.time-input label {
+  margin: 0;
+}
+
+.time-input select {
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
 .field input:hover,
 .field select:hover,
 .field input:focus,
@@ -494,6 +554,16 @@ h3 {
 .combobox-list li.active,
 .combobox-list li:hover {
   background: var(--surface-hover);
+}
+
+.combobox-list .location-option {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+  border: 1px solid color-mix(in srgb, var(--accent) 44%, transparent);
+}
+
+.combobox-list .location-option strong {
+  color: var(--accent);
 }
 
 .combobox-list .show-more-option {
@@ -580,6 +650,35 @@ h3 {
   border-block: 1px solid var(--border);
 }
 
+.location-panel {
+  padding: 18px;
+  background: color-mix(in srgb, var(--surface-strong) 78%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.location-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.location-panel-heading h3 {
+  margin: 0;
+}
+
+.icon-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: var(--text);
+  font-size: 1.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
 .location-assistant summary {
   padding-block: 15px;
   color: var(--accent);
@@ -605,6 +704,20 @@ h3 {
 .consent-card h3 {
   margin: 0 0 8px;
   color: var(--text);
+}
+
+.info-box {
+  margin-top: 12px;
+  padding: 12px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.info-box summary {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .coordinate-preview {
@@ -704,6 +817,16 @@ h3 {
   gap: 16px;
 }
 
+.same-time-card {
+  grid-column: 1 / -1;
+}
+
+.same-time-card > p {
+  margin: 12px auto 0;
+  color: var(--muted);
+  text-align: center;
+}
+
 .time-card {
   padding: clamp(22px, 4vw, 34px);
   border-radius: 22px;
@@ -737,7 +860,7 @@ h3 {
 
 .viewer-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   margin-top: 34px;
   align-items: start;
@@ -1024,6 +1147,14 @@ footer {
 
   .field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .time-input {
+    grid-template-columns: minmax(64px, 1fr) auto minmax(64px, 1fr);
+  }
+
+  .time-input .period-label {
+    grid-column: 1 / -1;
   }
 
   .form-card,

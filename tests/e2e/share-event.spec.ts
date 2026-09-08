@@ -12,7 +12,8 @@ test('creates and opens an Amsterdam event', async ({ page }) => {
   await page.goto('./');
   await page.getByLabel('Event name').fill('Launch');
   await page.getByLabel('Date').fill('2026-09-08');
-  await page.locator('#event-time').fill('09:30');
+  await page.getByLabel('Hour').selectOption('9');
+  await page.getByLabel('Minute').selectOption('30');
   await page.getByRole('combobox', { name: 'Event time zone' }).fill('ams');
   await expect(page.getByRole('option', { name: /Europe\/Amsterdam/ }).first()).toBeVisible();
   await page.getByRole('option', { name: /Europe\/Amsterdam/ }).first().click();
@@ -55,11 +56,42 @@ test('opens the native OS share sheet with localized event details', async ({ pa
 });
 
 test('switches event cards between 24-hour and AM/PM display', async ({ page }) => {
-  const event = createEventPayload('Format check', '2026-06-15T13:30', 'UTC');
+  await page.goto('./');
+  const deviceTimeZone = await page.evaluate(() =>
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  );
+  const event = createEventPayload('Format check', '2026-06-15T13:30', deviceTimeZone);
   await page.goto(`./#${serializeEvent(event)}`);
+  await expect(page.getByText('Your device and creator time')).toBeVisible();
+  await expect(page.getByText(/one clock is enough/)).toBeVisible();
   await expect(page.getByText('13:30').first()).toBeVisible();
   await page.getByLabel('Time format').selectOption('h12');
   await expect(page.getByText(/1:30 PM/).first()).toBeVisible();
+});
+
+test('switches creator time controls between 24-hour and AM/PM entry', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 840 });
+  await page.goto('./');
+  await expect(page.getByLabel('Hour').locator('option')).toHaveCount(24);
+  const hourBox = await page.getByLabel('Hour').boundingBox();
+  const minuteBox = await page.getByLabel('Minute').boundingBox();
+  expect(Math.abs((hourBox?.y ?? 0) - (minuteBox?.y ?? 0))).toBeLessThan(3);
+  await page.getByLabel('Time format').selectOption('h12');
+  await expect(page.getByLabel('Hour').locator('option')).toHaveCount(12);
+  await expect(page.getByLabel('AM or PM')).toBeVisible();
+});
+
+test('enforces event-name limits and renders shared names as inert text', async ({ page }) => {
+  await page.goto('./');
+  await page.getByLabel('Event name').fill('a'.repeat(121));
+  await expect(page.getByText(/no more than 120 characters/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Copy link' })).toBeDisabled();
+
+  const markup = '<img src=x onerror=alert(1)>';
+  const event = createEventPayload(markup, '2026-06-15T13:30', 'UTC');
+  await page.goto(`./#${serializeEvent(event)}`);
+  await expect(page.getByRole('heading', { name: markup })).toBeVisible();
+  await expect(page.locator('img[src="x"]')).toHaveCount(0);
 });
 
 test('renders every supported zone link in a real browser', async ({ page, browserName }) => {

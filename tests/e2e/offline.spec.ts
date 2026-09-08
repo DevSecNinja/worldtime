@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 
-import cityIndex from '../../public/data/generated/cities-index.json' with { type: 'json' };
 import timeZoneRules from '../../src/data/generated/time-zone-rules.json' with { type: 'json' };
 import { serializeEvent } from '../../src/domain/share-link';
 import { createEventPayload, initializeTimeZoneRules } from '../../src/domain/temporal';
@@ -17,6 +16,11 @@ test('reopens a shared event offline after the application is cached', async ({ 
   );
   await page.goto(`./#${fragment}`);
   await expect(page.getByRole('heading', { name: 'Offline rendezvous' })).toBeVisible();
+  const placeSearch = page.getByRole('combobox', { name: 'Country, city, or time zone' });
+  await placeSearch.fill('Seattle');
+  await expect(
+    page.getByRole('option', { name: /Seattle, United States.*America\/Los_Angeles/ }),
+  ).toBeVisible();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.waitForFunction(() => navigator.serviceWorker?.controller);
 
@@ -27,6 +31,10 @@ test('reopens a shared event offline after the application is cached', async ({ 
   await offlinePage.goto(eventUrl, { waitUntil: 'domcontentloaded' });
   await expect(offlinePage.getByRole('heading', { name: 'Offline rendezvous' })).toBeVisible();
   await expect(offlinePage.getByText(/Asia\/Kathmandu/).first()).toBeVisible();
+  await offlinePage.getByRole('combobox', { name: 'Country, city, or time zone' }).fill('Seattle');
+  await expect(
+    offlinePage.getByRole('option', { name: /Seattle, United States.*America\/Los_Angeles/ }),
+  ).toBeVisible();
 });
 
 test('service-worker caches contain no event fragment data', async ({ page }) => {
@@ -45,7 +53,6 @@ test('service-worker caches contain no event fragment data', async ({ page }) =>
   );
   expect(keys.some((key) => key.includes('Private') || key.includes('#'))).toBe(false);
   expect(keys.some((key) => key.includes('nominatim'))).toBe(false);
-  expect(keys.filter((key) => key.includes('/data/generated/cities/'))).toHaveLength(
-    Object.keys(cityIndex.shards).length,
-  );
+  expect(keys.filter((key) => key.includes('/data/generated/cities/'))).toHaveLength(0);
+  expect(keys.filter((key) => key.includes('/data/generated/city-prefixes/'))).toHaveLength(0);
 });

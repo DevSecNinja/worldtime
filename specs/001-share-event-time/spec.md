@@ -190,8 +190,9 @@ a previously copied event link while switching theme and language.
   accessible enhanced fallback where they are insufficient.
 - **FR-003**: The application MUST require confirmation of an exact IANA source time zone before
   generating a share link.
-- **FR-004**: Time-zone search MUST use fuzzy matching across IANA identifiers, cities, countries,
-  and common aliases; `ams` MUST surface `Europe/Amsterdam` prominently.
+- **FR-004**: Search MUST use fuzzy matching across IANA identifiers and common aliases, plus
+  deterministic native/ASCII prefix matching across cities and countries; `ams` MUST surface
+  `Europe/Amsterdam` prominently.
 - **FR-005**: The application MUST detect ambiguous and nonexistent local times caused by
   daylight-saving transitions and require explicit resolution.
 - **FR-006**: The application MUST generate readable, URL-safe share parameters that preserve the
@@ -241,7 +242,7 @@ a previously copied event link while switching theme and language.
   and IANA time-zone catalogs, including mapping completeness, search reachability, conversion
   validity, and representative daylight-saving transitions.
 - **FR-027**: City search MUST include every record from a pinned GeoNames cities500 snapshot (all
-  cities over 500 residents or administrative seats), work offline after the application is cached,
+  cities over 500 residents or administrative seats), cache searched shards for later offline use,
   and map each result to a supported country and IANA zone.
 - **FR-028**: The creator MUST be able to invoke the platform Web Share API with a localized event
   summary and URL; when native sharing is unavailable, the same complete message MUST be copied to
@@ -252,6 +253,28 @@ a previously copied event link while switching theme and language.
   selecting a city MUST choose its mapped country and exact IANA time zone.
 - **FR-031**: A globe preview MUST be visible by default on the event viewer, and activating it MUST
   load the movable interactive globe while retaining a control to close it.
+- **FR-032**: The creator's location assistant MUST remain hidden until the highlighted first search
+  option is selected.
+- **FR-033**: The location-country disclosure MUST use concise primary text with expandable details
+  covering transmitted fields, provider retention, privacy policy, and the independence of country
+  and time-zone results.
+- **FR-034**: When device and creator time contexts are identical, the viewer MUST show one time
+  card with an explanatory message instead of duplicate clocks.
+- **FR-035**: Browser-language initialization MUST follow the first supported English or Dutch entry
+  in the browser's ordered language preferences.
+- **FR-036**: The 24-hour/AM-PM setting MUST change both rendered times and the creator's time-entry
+  controls, with 24-hour display as the default.
+- **FR-037**: Event names MUST be limited to 120 Unicode code points, reject control characters, and
+  remain inert text after URL decoding and rendering.
+- **FR-038**: City search assets MUST be split into targeted shards so a typical city query does not
+  download the former full first-letter dataset.
+- **FR-039**: Normal CI and deployment MUST restore a checksummed, version-pinned GitHub
+  reference-data release without contacting GeoNames; a separate updater MUST use conditional
+  upstream metadata and download only changed snapshots.
+- **FR-041**: Initial PWA installation MUST NOT download the full city catalog; city prefix and data
+  shards MUST be fetched and cached only for searches the user performs.
+- **FR-040**: Deployment and releases MUST call the pinned reusable Pages and Release Please
+  workflows from `DevSecNinja/.github`.
 
 ### Key Entities
 

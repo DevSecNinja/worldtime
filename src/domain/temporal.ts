@@ -95,6 +95,11 @@ export function parseLocalDateTime(local: string): Temporal.PlainDateTime {
   return parsed;
 }
 
+export function isValidEventName(name: string): boolean {
+  const trimmedName = name.trim();
+  return [...trimmedName].length <= 120 && !/[\p{Cc}\p{Cf}]/u.test(trimmedName);
+}
+
 export function classifyWallTime(localValue: string, timeZone: string): WallTimeClassification {
   try {
     if (!isSupportedTimeZone(timeZone)) {
@@ -167,7 +172,7 @@ export function createEventPayload(
     ? classification.value
     : classification[resolution as WallTimeResolution];
   const trimmedName = name.trim();
-  if ([...trimmedName].length > 120 || /[\u0000-\u001f\u007f]/u.test(trimmedName)) {
+  if (!isValidEventName(trimmedName)) {
     throw new RangeError('The event name is too long or contains control characters.');
   }
 

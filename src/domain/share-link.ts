@@ -4,6 +4,7 @@ import type { EventPayload, Locale, TimeFormat } from './event';
 import {
   formatSourceRepresentation,
   isSupportedTimeZone,
+  isValidEventName,
   parseLocalDateTime,
   validateEventInvariant,
 } from './temporal';
@@ -107,7 +108,7 @@ export function parseEventFragment(fragment: string): ShareLinkResult {
     Temporal.Instant.from(instant);
 
     const name = params.get('name')?.trim() || null;
-    if (name && ([...name].length > 120 || /[\u0000-\u001f\u007f]/u.test(name))) {
+    if (name && !isValidEventName(name)) {
       return { ok: false, error: 'name' };
     }
 

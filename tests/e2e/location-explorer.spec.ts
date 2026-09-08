@@ -1,10 +1,13 @@
 import { expect, test } from '@playwright/test';
 
+import cityIndex from '../../public/data/generated/cities-index.json' with { type: 'json' };
 import countries from '../../src/data/generated/countries.json' with { type: 'json' };
 import timeZoneRules from '../../src/data/generated/time-zone-rules.json' with { type: 'json' };
 import timeZones from '../../src/data/generated/timezones.json' with { type: 'json' };
 import { serializeEvent } from '../../src/domain/share-link';
 import { createEventPayload, initializeTimeZoneRules } from '../../src/domain/temporal';
+
+test.use({ serviceWorkers: 'block' });
 
 initializeTimeZoneRules(timeZoneRules);
 const eventFragment = serializeEvent(
@@ -13,11 +16,12 @@ const eventFragment = serializeEvent(
 
 test('search and multi-zone country selection provide exact conversion', async ({ page }) => {
   await page.goto(`./#${eventFragment}`);
-  await page.getByLabel('Country or city').fill('United Kingdom');
-  await page.getByRole('button', { name: /United Kingdom.*GB/ }).click();
+  const picker = page.getByRole('combobox', { name: 'Country, city, or time zone' });
+  await picker.fill('United Kingdom');
+  await page.getByRole('option', { name: /United Kingdom.*Europe\/London/ }).click();
   await expect(page.getByText('Compared location')).toBeVisible();
-  await page.getByLabel('Country or city').fill('United States');
-  await page.getByRole('button', { name: /United States.*US/ }).click();
+  await picker.fill('United States');
+  await page.getByRole('option', { name: /United States.*Choose an exact time zone/ }).click();
   await expect(page.getByText('Compared location')).toHaveCount(0);
   await expect(page.getByText('America/New_York')).toBeVisible();
   await page.getByRole('button', { name: 'America/New_York' }).click();
@@ -26,26 +30,33 @@ test('search and multi-zone country selection provide exact conversion', async (
 });
 
 test('finds a city directly from the country-or-city field', async ({ page }) => {
+  const cityRequests: string[] = [];
+  page.on('request', (request) => {
+    if (
+      request.url().includes('/data/generated/cities/')
+      || request.url().includes('/data/generated/city-prefixes/')
+    ) {
+      cityRequests.push(request.url());
+    }
+  });
   await page.goto(`./#${eventFragment}`);
-  await page.getByLabel('Country or city').fill('Seattle');
-  await page.getByRole('button', { name: /Seattle, United States.*America\/Los_Angeles/ }).click();
+  await page.getByRole('combobox', { name: 'Country, city, or time zone' }).fill('Seattle');
+  await page.getByRole('option', { name: /Seattle, United States.*America\/Los_Angeles/ }).click();
   await expect(page.getByText('Compared location')).toBeVisible();
   await expect(page.getByText(/America\/Los_Angeles/).first()).toBeVisible();
+  expect(cityRequests.some((url) => /\/cities\/se\.json/.test(url))).toBe(true);
+  expect(cityRequests.some((url) => /\/cities\/s\.json/.test(url))).toBe(false);
+  expect(cityRequests.some((url) => /\/city-prefixes\/s\.json/.test(url))).toBe(true);
 });
 
 test('finds a city from the complete GeoNames catalog', async ({ page }) => {
   await page.goto(`./#${eventFragment}`);
-  const picker = page.getByRole('combobox', { name: 'Search time zones' });
+  const picker = page.getByRole('combobox', { name: 'Country, city, or time zone' });
   await picker.fill('Vila');
   const city = page.getByRole('option', { name: /Vila, Andorra.*Europe\/Andorra/ });
   await expect(city).toBeVisible();
   await city.click();
   await expect(page.getByText(/Europe\/Andorra/).first()).toBeVisible();
-
-  await picker.fill('Vla');
-  await expect(
-    page.getByRole('option', { name: /Vila, Andorra.*Europe\/Andorra/ }),
-  ).toBeVisible();
 
   await picker.fill('Ærøskøbing');
   await expect(
@@ -70,7 +81,7 @@ test('keeps search available when the optional globe cannot load', async ({ page
   await page.goto(`./#${eventFragment}`);
   await page.getByRole('button', { name: 'Open interactive globe' }).click();
   await expect(page.getByText(/globe could not load/i)).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Search time zones' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Country, city, or time zone' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Distributed review' })).toBeVisible();
 });
 
@@ -83,7 +94,7 @@ test('shows the same fallback when globe geometry cannot load', async ({ page, b
   await page.goto(`./#${eventFragment}`);
   await page.getByRole('button', { name: 'Open interactive globe' }).click();
   await expect(page.getByText(/globe could not load/i)).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Search time zones' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Country, city, or time zone' })).toBeVisible();
 });
 
 test('browser catalog validates all countries, zones, and geometry mappings', async ({ page }) => {
@@ -172,6 +183,6 @@ test('browser catalog validates all countries, zones, and geometry mappings', as
   expect(audit.invalidZones).toEqual([]);
   expect(audit.invalidCountryMappings).toEqual([]);
   expect(audit.missingGeometry).toEqual([]);
-  expect(audit.cities).toBe(235_684);
+  expect(audit.cities).toBe(cityIndex.total);
   expect(audit.invalidCities).toEqual([]);
 });

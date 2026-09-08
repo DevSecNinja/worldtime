@@ -1,6 +1,9 @@
 node_modules/
 dist/
 coverage/
+.cache/
+src/data/generated/
+public/data/generated/
 playwright-report/
 test-results/
 *.log

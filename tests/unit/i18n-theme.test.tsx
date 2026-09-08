@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AppStateProvider } from '../../src/app/app-state';
 import { AppHeader } from '../../src/components/AppHeader';
+import { browserLocale } from '../../src/i18n';
 import { en } from '../../src/i18n/en';
 import { nl } from '../../src/i18n/nl';
 
@@ -28,5 +29,13 @@ describe('localization and ephemeral theme', () => {
     await user.selectOptions(screen.getByLabelText('Tijdnotatie'), 'h12');
     expect(screen.getByLabelText('Tijdnotatie')).toHaveValue('h12');
     expect(setItem).not.toHaveBeenCalled();
+  });
+
+  it('uses the first supported browser language instead of any later match', () => {
+    const languages = vi.spyOn(navigator, 'languages', 'get');
+    languages.mockReturnValue(['en-US', 'nl-NL']);
+    expect(browserLocale()).toBe('en');
+    languages.mockReturnValue(['fr-FR', 'nl-NL', 'en-US']);
+    expect(browserLocale()).toBe('nl');
   });
 });

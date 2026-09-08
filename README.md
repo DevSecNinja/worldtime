@@ -9,13 +9,14 @@ own zone or anywhere they choose.
 - Strict daylight-saving handling: repeated and skipped clock times require an explicit choice.
 - Readable fragment links: event data stays after `#` and is not sent to the static host.
 - Native OS sharing with a localized event summary, plus a full-message clipboard fallback.
-- Complete catalog coverage: 419 supported zones, 249 ISO countries plus Kosovo, and 235,684
+- Complete catalog coverage: 419 supported zones, 249 ISO countries plus Kosovo, and 235,694
   GeoNames cities (all places over 500 residents or administrative seats).
 - Fuzzy local search: typing `ams` surfaces `Europe/Amsterdam`.
 - Accessible search plus a lazy-loaded 3D globe.
 - Optional location assistance with local coordinate-to-zone derivation.
 - Separate informed consent before an optional OpenStreetMap Nominatim country lookup.
 - English and Dutch, with system/light/dark themes that reset on refresh.
+- 24-hour time by default, with an ephemeral AM/PM switch that updates entry and display controls.
 - Offline creation and viewing after the first successful visit.
 - No backend, account, analytics, cookies, or persisted user/event/location state.
 
@@ -30,6 +31,12 @@ npm run dev
 
 The pre-development hook regenerates deterministic reference data from the pinned sources under
 `data/upstream/`.
+
+Normal development, CI, Pages, and Cloudflare workflows never contact GeoNames. They download one
+checksummed compressed reference-data asset from a dedicated GitHub prerelease identified by
+`reference-data.json`. `npm run data:update:cities` first makes a conditional metadata request and
+downloads the upstream archive only when its ETag or Last-Modified value changes. A monthly workflow
+then publishes a new data release and opens a pointer-only pull request.
 
 ## Validation
 
@@ -50,6 +57,13 @@ other PWA tests.
 
 Worldtime stores no event, location, language, theme, or consent data. PWA Cache Storage contains
 only versioned static assets and public reference data.
+
+The initial language follows the first English or Dutch entry in the browser's ordered language
+preferences. Manual language, theme, and time-format changes last for the current page only so the
+application does not create a persistent preference profile.
+
+Event names are limited to 120 Unicode code points. Control characters are rejected, URL parameters
+are encoded and strictly validated, and React renders decoded names as text rather than HTML.
 
 Browser geolocation is optional and starts only after a user action. Coordinates are used inside the
 page to suggest time zones. The browser or operating system may independently contact its configured
@@ -84,9 +98,13 @@ geographic feature in the much larger GeoNames gazetteer.
 
 ## Deployment
 
-Pushes to `main` build and deploy `dist/` to GitHub Pages. The production build uses relative asset
-paths and fragment links, so the same artifact can later move to Cloudflare Pages without changing
-event-link semantics.
+The repository calls the central DevSecNinja Pages workflow. A caller-owned build job downloads the
+reference-data release once, runs the complete test suite, uploads the built site artifact, and
+hands that artifact to GitHub Pages and Cloudflare preview jobs. Pushes to `main` deploy to GitHub
+Pages; Cloudflare production can be enabled later without changing event-link semantics.
+
+The central Release Please workflow opens conventional release pull requests and creates version
+tags and GitHub releases after they merge.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
 [Speckit feature artifacts](specs/001-share-event-time/) for the full design.

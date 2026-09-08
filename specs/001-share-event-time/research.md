@@ -41,7 +41,8 @@ political rules change after link creation, while the instant guarantees recipie
 
 ## Authoritative reference data
 
-**Decision**: Generate committed application datasets from pinned sources:
+**Decision**: Generate deterministic application datasets from pinned sources and distribute them as
+a checksummed GitHub data-release asset:
 
 1. IANA tzdb release identifiers and links for canonical time-zone provenance.
 2. `@vvo/tzdb` 6.198.0 for browser-friendly zone, city, country, and alias metadata.
@@ -51,7 +52,7 @@ political rules change after link creation, while the instant guarantees recipie
    implementations.
 6. `@photostructure/tz-lookup` 11.6.1 for local coordinate-to-zone candidates, whose generated
    dataset is CC0 and traceable to open time-zone boundary sources.
-7. A pinned 2026-09-07 GeoNames cities500 snapshot for 235,684 cities over 500 residents or
+7. A pinned 2026-09-08 GeoNames cities500 snapshot for 235,694 cities over 500 residents or
    administrative seats, licensed CC BY 4.0.
 
 The generated provenance manifest records package/source versions, URLs, licenses, retrieval date,

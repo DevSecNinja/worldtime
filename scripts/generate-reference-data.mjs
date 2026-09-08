@@ -15,7 +15,6 @@ const root = resolve(import.meta.dirname, '..');
 const upstreamManifestPath = resolve(root, 'data/upstream/manifest.json');
 const zoneTabPath = resolve(root, 'data/upstream/iana/2026c/zone.tab');
 const countryTabPath = resolve(root, 'data/upstream/iana/2026c/iso3166.tab');
-const citiesZipPath = resolve(root, 'data/upstream/geonames/2026-09-07/cities500.zip');
 const outputDir = resolve(root, 'src/data/generated');
 const publicOutputDir = resolve(root, 'public/data/generated');
 
@@ -27,6 +26,11 @@ const normalize = (value) =>
     .replace(/[^\p{Letter}\p{Number}]+/gu, ' ')
     .trim()
     .toLocaleLowerCase('en');
+
+const cityShardKey = (value) => {
+  const compact = normalize(value).replace(/[^a-z0-9]/g, '');
+  return compact.length >= 2 ? compact.slice(0, 2) : `${compact || 'x'}_`;
+};
 
 const readRows = async (path) =>
   (await readFile(path, 'utf8'))
@@ -47,14 +51,25 @@ const writeJson = async (path, value) => {
   };
 };
 
-const [zoneRows, countryRows, manifestSource, citiesZip] = await Promise.all([
+const manifestSource = await readFile(upstreamManifestPath, 'utf8');
+const upstreamManifest = JSON.parse(manifestSource);
+const citySource = upstreamManifest.sources.find(({ name }) => name === 'GeoNames Gazetteer');
+if (!citySource?.archive?.sha256) {
+  throw new Error('GeoNames archive metadata is missing from the upstream manifest.');
+}
+const cityArchivePath = process.env.GEONAMES_ARCHIVE
+  ? resolve(process.env.GEONAMES_ARCHIVE)
+  : resolve(root, '.cache/reference-data/cities500.zip');
+
+const [zoneRows, countryRows, citiesZip] = await Promise.all([
   readRows(zoneTabPath),
   readRows(countryTabPath),
-  readFile(upstreamManifestPath, 'utf8'),
-  readFile(citiesZipPath),
+  readFile(cityArchivePath),
 ]);
+if (sha256(citiesZip) !== citySource.archive.sha256) {
+  throw new Error('GeoNames archive checksum does not match the upstream manifest.');
+}
 
-const upstreamManifest = JSON.parse(manifestSource);
 const countryEnglishNames = new Map(countryRows.map(([code, name]) => [code, name]));
 countryEnglishNames.set('XK', 'Kosovo');
 const englishTerritories = enLocaleNames.main.en.localeDisplayNames.territories;
@@ -124,6 +139,7 @@ for (const metadata of rawTimeZones) {
 const citiesArchive = unzipSync(citiesZip);
 const citiesText = strFromU8(citiesArchive['cities500.txt']);
 const cityShards = new Map();
+const cityPrefixIndex = new Map();
 const cityCountsByCountry = new Map();
 let unsupportedCityCount = 0;
 let cityRecordCount = 0;
@@ -145,6 +161,7 @@ for (const row of citiesText.split(/\r?\n/)) {
   cityRecordCount += 1;
 
   const searchTokens = [...new Set([normalize(name), normalize(asciiName || name)])].filter(Boolean);
+  const bucket = cityShardKey(asciiName || name);
   const record = [
     Number(id),
     name,
@@ -154,11 +171,14 @@ for (const row of citiesText.split(/\r?\n/)) {
     population,
     searchTokens,
   ];
+  const shard = cityShards.get(bucket) ?? [];
+  shard.push(record);
+  cityShards.set(bucket, shard);
   for (const searchToken of searchTokens) {
-    const bucket = /^[a-z0-9]/.test(searchToken) ? searchToken[0] : '_';
-    const shard = cityShards.get(bucket) ?? [];
-    if (!shard.some((candidate) => candidate[0] === Number(id))) shard.push(record);
-    cityShards.set(bucket, shard);
+    const prefix = [...searchToken].slice(0, 4).join('');
+    const buckets = cityPrefixIndex.get(prefix) ?? new Set();
+    buckets.add(bucket);
+    cityPrefixIndex.set(prefix, buckets);
   }
   cityCountsByCountry.set(countryCode, (cityCountsByCountry.get(countryCode) ?? 0) + 1);
 }
@@ -265,6 +285,23 @@ for (const [bucket, records] of [...cityShards.entries()].sort()) {
   artifacts.push(artifact);
   cityIndex[bucket] = records.length;
 }
+await rm(resolve(publicOutputDir, 'city-prefixes.json'), { force: true });
+const cityPrefixOutputDir = resolve(publicOutputDir, 'city-prefixes');
+await rm(cityPrefixOutputDir, { recursive: true, force: true });
+const cityPrefixGroups = new Map();
+for (const [prefix, buckets] of cityPrefixIndex.entries()) {
+  const group = /^[a-z0-9]/.test(prefix) ? prefix[0] : '_';
+  const entries = cityPrefixGroups.get(group) ?? [];
+  entries.push([prefix, [...buckets].sort()]);
+  cityPrefixGroups.set(group, entries);
+}
+const prefixGroupIndex = {};
+for (const [group, entries] of [...cityPrefixGroups.entries()].sort()) {
+  entries.sort(([left], [right]) => left.localeCompare(right));
+  const artifact = await writeJson(resolve(cityPrefixOutputDir, `${group}.json`), entries);
+  artifacts.push(artifact);
+  prefixGroupIndex[group] = entries.length;
+}
 artifacts.push(
   await writeJson(resolve(publicOutputDir, 'cities-index.json'), {
     schemaVersion: 1,
@@ -272,6 +309,8 @@ artifacts.push(
     total: cityRecordCount,
     indexedEntries: [...cityShards.values()].reduce((sum, records) => sum + records.length, 0),
     unsupported: unsupportedCityCount,
+    prefixEntries: cityPrefixIndex.size,
+    prefixGroups: prefixGroupIndex,
     shards: cityIndex,
   }),
 );
@@ -285,7 +324,7 @@ const provenance = {
     'Enriched search metadata from @vvo/tzdb without using its offset values.',
     `Compiled ${moment.tz.dataVersion} offset transitions surrounding the supported 1970-2100 wall-time range.`,
     'Localized ISO country codes from pinned CLDR 48.2 English and Dutch territory data.',
-    'Normalized and sharded GeoNames cities500 records by first ASCII character.',
+    'Normalized GeoNames cities500 records into two-character ASCII shards with a native-name prefix index.',
     'Converted Natural Earth-derived world-atlas TopoJSON to ISO-keyed GeoJSON.',
   ],
   counts: {
