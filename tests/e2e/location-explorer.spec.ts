@@ -13,16 +13,24 @@ const eventFragment = serializeEvent(
 
 test('search and multi-zone country selection provide exact conversion', async ({ page }) => {
   await page.goto(`./#${eventFragment}`);
-  await page.getByLabel('Country').fill('United Kingdom');
+  await page.getByLabel('Country or city').fill('United Kingdom');
   await page.getByRole('button', { name: /United Kingdom.*GB/ }).click();
   await expect(page.getByText('Compared location')).toBeVisible();
-  await page.getByLabel('Country').fill('United States');
+  await page.getByLabel('Country or city').fill('United States');
   await page.getByRole('button', { name: /United States.*US/ }).click();
   await expect(page.getByText('Compared location')).toHaveCount(0);
   await expect(page.getByText('America/New_York')).toBeVisible();
   await page.getByRole('button', { name: 'America/New_York' }).click();
   await expect(page.getByText('Compared location')).toBeVisible();
   await expect(page.getByText(/America\/New_York/).first()).toBeVisible();
+});
+
+test('finds a city directly from the country-or-city field', async ({ page }) => {
+  await page.goto(`./#${eventFragment}`);
+  await page.getByLabel('Country or city').fill('Seattle');
+  await page.getByRole('button', { name: /Seattle, United States.*America\/Los_Angeles/ }).click();
+  await expect(page.getByText('Compared location')).toBeVisible();
+  await expect(page.getByText(/America\/Los_Angeles/).first()).toBeVisible();
 });
 
 test('finds a city from the complete GeoNames catalog', async ({ page }) => {
@@ -53,9 +61,13 @@ test('finds a city from the complete GeoNames catalog', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Show more matching cities' })).toBeVisible();
 });
 
-test('keeps search available when the optional globe cannot load', async ({ page, context }) => {
+test('keeps search available when the optional globe cannot load', async ({ page, browserName }) => {
+  test.skip(
+    browserName === 'webkit',
+    'Playwright WebKit does not route dynamic module requests reliably.',
+  );
+  await page.route('**/assets/GlobeExplorer-*.js', (route) => route.abort());
   await page.goto(`./#${eventFragment}`);
-  await context.setOffline(true);
   await page.getByRole('button', { name: 'Open interactive globe' }).click();
   await expect(page.getByText(/globe could not load/i)).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Search time zones' })).toBeVisible();

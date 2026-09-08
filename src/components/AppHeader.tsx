@@ -1,8 +1,8 @@
 import { useAppState } from '../app/app-state';
-import type { Locale, ThemeMode } from '../domain/event';
+import type { Locale, ThemeMode, TimeFormat } from '../domain/event';
 
 export function AppHeader() {
-  const { locale, setLocale, theme, setTheme, t } = useAppState();
+  const { locale, setLocale, theme, setTheme, timeFormat, setTimeFormat, t } = useAppState();
 
   return (
     <header className='app-header'>
@@ -26,6 +26,17 @@ export function AppHeader() {
           >
             <option value='en'>EN</option>
             <option value='nl'>NL</option>
+          </select>
+        </label>
+        <label className='compact-control'>
+          <span className='sr-only'>{t('timeFormat')}</span>
+          <select
+            value={timeFormat}
+            onChange={(event) => setTimeFormat(event.target.value as TimeFormat)}
+            aria-label={t('timeFormat')}
+          >
+            <option value='h23'>{t('timeFormat24')}</option>
+            <option value='h12'>{t('timeFormat12')}</option>
           </select>
         </label>
         <label className='compact-control theme-control'>

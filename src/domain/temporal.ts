@@ -1,6 +1,6 @@
 import { Temporal } from 'temporal-polyfill';
 
-import type { EventPayload, Locale } from './event';
+import type { EventPayload, Locale, TimeFormat } from './event';
 
 export const MIN_EVENT_YEAR = 1970;
 export const MAX_EVENT_YEAR = 2100;
@@ -205,6 +205,7 @@ export function sourceRulesChanged(event: EventPayload): boolean {
 export function formatSourceRepresentation(
   event: EventPayload,
   locale: Locale,
+  timeFormat: TimeFormat = 'h23',
 ): { date: string; time: string; zone: string; offset: string; } {
   const local = parseLocalDateTime(event.local);
   const localEpoch = Date.UTC(
@@ -226,7 +227,7 @@ export function formatSourceRepresentation(
       timeZone: 'UTC',
       hour: '2-digit',
       minute: '2-digit',
-      hourCycle: 'h23',
+      hourCycle: timeFormat,
     }).format(localEpoch),
     zone: event.sourceTimeZone,
     offset: event.sourceOffset === 'Z' ? '+00:00' : event.sourceOffset,
@@ -237,6 +238,7 @@ export function formatEventInZone(
   event: EventPayload,
   timeZone: string,
   locale: Locale,
+  timeFormat: TimeFormat = 'h23',
 ): {
   date: string;
   time: string;
@@ -260,7 +262,7 @@ export function formatEventInZone(
     timeZone: 'UTC',
     hour: '2-digit',
     minute: '2-digit',
-    hourCycle: 'h23',
+    hourCycle: timeFormat,
   }).format(localEpoch);
   const deltaMinutes = Math.round((epoch - Date.now()) / 60_000);
   const absMinutes = Math.abs(deltaMinutes);

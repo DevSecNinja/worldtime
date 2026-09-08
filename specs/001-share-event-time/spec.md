@@ -246,6 +246,12 @@ a previously copied event link while switching theme and language.
 - **FR-028**: The creator MUST be able to invoke the platform Web Share API with a localized event
   summary and URL; when native sharing is unavailable, the same complete message MUST be copied to
   the clipboard.
+- **FR-029**: Users MUST be able to switch between 24-hour and AM/PM time display from the header;
+  the choice applies immediately to event cards and native-share text and remains ephemeral.
+- **FR-030**: The event viewer's primary location field MUST search both countries and cities, and
+  selecting a city MUST choose its mapped country and exact IANA time zone.
+- **FR-031**: A globe preview MUST be visible by default on the event viewer, and activating it MUST
+  load the movable interactive globe while retaining a control to close it.
 
 ### Key Entities
 

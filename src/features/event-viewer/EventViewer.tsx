@@ -29,7 +29,7 @@ function TimeCard({
   return (
     <article className={`time-card ${accent ? 'accent' : ''}`}>
       <p className='time-label'>{label}</p>
-      <p className='time-main'>{time.replace(/\s[A-Z]{2,6}$/u, '')}</p>
+      <p className='time-main'>{time}</p>
       <p className='time-date'>{date}</p>
       <p className='time-zone'>
         {zone} · {offset === '+00:00' || offset === 'Z' ? 'UTC' : `UTC${offset}`}
@@ -42,20 +42,20 @@ export function EventViewer({ event, onCreateAnother }: {
   event: EventPayload;
   onCreateAnother: () => void;
 }) {
-  const { locale, t } = useAppState();
+  const { locale, timeFormat, t } = useAppState();
   const deviceTimeZone = currentDeviceTimeZone();
   const [comparisonTimeZone, setComparisonTimeZone] = useState<string | null>(null);
   const deviceDisplay = useMemo(
-    () => formatEventInZone(event, deviceTimeZone, locale),
-    [event, deviceTimeZone, locale],
+    () => formatEventInZone(event, deviceTimeZone, locale, timeFormat),
+    [event, deviceTimeZone, locale, timeFormat],
   );
   const sourceDisplay = useMemo(
-    () => formatSourceRepresentation(event, locale),
-    [event, locale],
+    () => formatSourceRepresentation(event, locale, timeFormat),
+    [event, locale, timeFormat],
   );
   const comparisonDisplay = useMemo(
-    () => formatEventInZone(event, comparisonTimeZone ?? deviceTimeZone, locale),
-    [event, comparisonTimeZone, deviceTimeZone, locale],
+    () => formatEventInZone(event, comparisonTimeZone ?? deviceTimeZone, locale, timeFormat),
+    [event, comparisonTimeZone, deviceTimeZone, locale, timeFormat],
   );
   const rulesChanged = sourceRulesChanged(event);
 

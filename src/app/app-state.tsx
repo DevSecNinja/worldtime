@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
-import type { Locale, ThemeMode } from '../domain/event';
+import type { Locale, ThemeMode, TimeFormat } from '../domain/event';
 import { browserLocale, type MessageKey, translate } from '../i18n';
 
 interface AppStateValue {
@@ -8,6 +8,8 @@ interface AppStateValue {
   setLocale: (locale: Locale) => void;
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
+  timeFormat: TimeFormat;
+  setTimeFormat: (timeFormat: TimeFormat) => void;
   t: (key: MessageKey) => string;
 }
 
@@ -16,6 +18,7 @@ const AppStateContext = createContext<AppStateValue | null>(null);
 export function AppStateProvider({ children }: { children: ReactNode; }) {
   const [locale, setLocale] = useState<Locale>(() => browserLocale());
   const [theme, setTheme] = useState<ThemeMode>('system');
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>('h23');
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -31,8 +34,10 @@ export function AppStateProvider({ children }: { children: ReactNode; }) {
     setLocale,
     theme,
     setTheme,
+    timeFormat,
+    setTimeFormat,
     t: (key) => translate(locale, key),
-  }), [locale, theme]);
+  }), [locale, theme, timeFormat]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

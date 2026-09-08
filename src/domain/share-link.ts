@@ -1,6 +1,6 @@
 import { Temporal } from 'temporal-polyfill';
 
-import type { EventPayload, Locale } from './event';
+import type { EventPayload, Locale, TimeFormat } from './event';
 import {
   formatSourceRepresentation,
   isSupportedTimeZone,
@@ -51,8 +51,9 @@ export function buildNativeShareData(
   event: EventPayload,
   locale: Locale,
   url: string,
+  timeFormat: TimeFormat = 'h23',
 ): ShareData {
-  const source = formatSourceRepresentation(event, locale);
+  const source = formatSourceRepresentation(event, locale, timeFormat);
   const eventSubject = event.name
     ? locale === 'nl' ? `Het evenement “${event.name}”` : `The event “${event.name}”`
     : locale === 'nl'

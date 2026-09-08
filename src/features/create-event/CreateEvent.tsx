@@ -21,7 +21,7 @@ const initialDateTime = () => {
 };
 
 export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) => void; }) {
-  const { locale, t } = useAppState();
+  const { locale, timeFormat, t } = useAppState();
   const initial = useMemo(initialDateTime, []);
   const [name, setName] = useState('');
   const [date, setDate] = useState(initial.date);
@@ -74,7 +74,7 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
   const shareEvent = async () => {
     if (!canShare) return;
     const { event, link } = createSharePackage();
-    const data = buildNativeShareData(event, locale, link);
+    const data = buildNativeShareData(event, locale, link, timeFormat);
     setCopyState('idle');
     setNativeShareState('idle');
 

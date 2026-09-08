@@ -1,5 +1,6 @@
 export type Locale = 'en' | 'nl';
 export type ThemeMode = 'system' | 'light' | 'dark';
+export type TimeFormat = 'h23' | 'h12';
 
 export interface EventPayload {
   version: 1;

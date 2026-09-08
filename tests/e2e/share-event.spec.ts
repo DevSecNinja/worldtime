@@ -41,15 +41,25 @@ test('opens the native OS share sheet with localized event details', async ({ pa
   await page.getByLabel('Event name').fill('Launch');
   await page.getByRole('combobox', { name: 'Event time zone' }).fill('ams');
   await page.getByRole('option', { name: /Europe\/Amsterdam/ }).first().click();
+  await page.getByLabel('Time format').selectOption('h12');
   await page.getByRole('button', { name: 'Share event' }).click();
 
   const shareData = await page.evaluate(
     () => (window as typeof window & { __sharedData?: ShareData; }).__sharedData,
   );
   expect(shareData?.title).toBe('Launch');
+  expect(shareData?.text).toMatch(/\d{1,2}:\d{2} (AM|PM)/);
   expect(shareData?.text).toContain('Europe/Amsterdam');
   expect(shareData?.text).toContain('Open Worldtime');
   expect(shareData?.url).toContain('#v=1&name=Launch');
+});
+
+test('switches event cards between 24-hour and AM/PM display', async ({ page }) => {
+  const event = createEventPayload('Format check', '2026-06-15T13:30', 'UTC');
+  await page.goto(`./#${serializeEvent(event)}`);
+  await expect(page.getByText('13:30').first()).toBeVisible();
+  await page.getByLabel('Time format').selectOption('h12');
+  await expect(page.getByText(/1:30 PM/).first()).toBeVisible();
 });
 
 test('renders every supported zone link in a real browser', async ({ page, browserName }) => {

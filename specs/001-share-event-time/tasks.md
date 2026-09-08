@@ -178,6 +178,14 @@ caches for public assets only.
 - [x] T045 Add unit, integration, and browser coverage for native sharing in
       tests/unit/share-link.test.ts, tests/integration/create-event.test.tsx, and
       tests/e2e/share-event.spec.ts
+- [x] T046 Add an ephemeral 24-hour/AM-PM selector in src/components/AppHeader.tsx and
+      src/app/app-state.tsx
+- [x] T047 Apply the selected time format to event cards and native-share text with automated
+      coverage
+- [x] T048 Expand the primary event-viewer location field to country and city search in
+      src/features/event-viewer/LocationExplorer.tsx
+- [x] T049 Display the interactive globe by default while preserving its close control and fallback
+      behavior
 
 ---
 

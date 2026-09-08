@@ -63,5 +63,8 @@ describe('share-link contract', () => {
     expect(english.text).toContain('see the time where you are');
     expect(dutch.text).toContain('Het evenement “Launch”');
     expect(dutch.text).toContain('jouw lokale tijd');
+
+    const twelveHour = buildNativeShareData(event, 'en', url, 'h12');
+    expect(twelveHour.text).toMatch(/9:30 AM/i);
   });
 });

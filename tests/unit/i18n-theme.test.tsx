@@ -25,6 +25,8 @@ describe('localization and ephemeral theme', () => {
     expect(screen.getByLabelText('Taal')).toHaveValue('nl');
     await user.selectOptions(screen.getByLabelText('Thema'), 'dark');
     expect(document.documentElement.dataset.theme).toBe('dark');
+    await user.selectOptions(screen.getByLabelText('Tijdnotatie'), 'h12');
+    expect(screen.getByLabelText('Tijdnotatie')).toHaveValue('h12');
     expect(setItem).not.toHaveBeenCalled();
   });
 });
