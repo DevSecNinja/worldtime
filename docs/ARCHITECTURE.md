@@ -43,7 +43,6 @@ identifier for future interpretation.
   and routed through a compact native-name prefix index for responsive offline search;
 - supplemental time-zone search enrichment from `@vvo/tzdb`;
 - ISO numeric mapping from `i18n-iso-countries`;
-- Natural Earth geometry from `world-atlas`.
 
 It writes deterministic JSON and a provenance manifest, then packages both public and build-time
 datasets into a compressed GitHub prerelease asset. `reference-data.json` pins the release tag,
@@ -79,19 +78,16 @@ Security Policy and referrer policy. A later Cloudflare Pages deployment should 
 
 ## Progressive enhancement
 
-The native date input, accessible segmented time control, and ARIA combobox provide the baseline.
-The time control follows the ephemeral 24-hour/AM-PM setting rather than depending on operating
-system picker presentation. The 3D globe is dynamically imported, uses same-origin Natural Earth
-geometry, and is excluded from the precache. Search remains available when WebGL, dragging, motion,
-bandwidth, or assistive technology make the globe unsuitable.
+The native date input, accessible segmented time control, and ARIA combobox provide the complete
+interaction. The time control follows the ephemeral 24-hour/AM-PM setting rather than depending on
+operating system picker presentation.
 
 ## Offline behavior
 
 Workbox precaches the shell, localization, country/time-zone catalog, and pinned transition rules.
 City prefix/data shards enter a dedicated runtime cache only after the corresponding search, so the
 first install does not download the full catalog and previously searched cities remain available
-offline. The globe bundle and geometry also enter a dedicated cache only after use. Reverse
-geocoding is network-only and fails back to local search.
+offline. Reverse geocoding is network-only and fails back to local search.
 
 Update installation is prompt-based so an automatic refresh cannot discard an in-progress event
 draft.
@@ -104,7 +100,6 @@ draft.
 - `reference-data.json` pins the SHA-256 of the compressed data release.
 - The first 12 characters of that SHA are part of the runtime city-cache name. A new data release
   therefore fetches fresh shards and the application removes obsolete city caches.
-- Optional globe chunks are content-hashed and geometry is isolated in its own runtime cache.
 
 ## Deployment portability
 

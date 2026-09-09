@@ -52,24 +52,24 @@ Invariants:
 
 ## Country record
 
-| Field        | Type                   | Rules                                      |
-| ------------ | ---------------------- | ------------------------------------------ |
-| `alpha2`     | ISO alpha-2            | Unique                                     |
-| `numeric`    | ISO numeric code       | Unique where geometry exists               |
-| `names`      | English/Dutch labels   | Nonempty                                   |
-| `timeZones`  | IANA identifier array  | At least one selectable zone               |
-| `geometryId` | numeric string or null | Maps to Natural Earth/world-atlas geometry |
+| Field       | Type                  | Rules                        |
+| ----------- | --------------------- | ---------------------------- |
+| `alpha2`    | ISO alpha-2           | Unique                       |
+| `numeric`   | ISO numeric code      | Unique where assigned        |
+| `names`     | English/Dutch labels  | Nonempty                     |
+| `timeZones` | IANA identifier array | At least one selectable zone |
 
 ## City record
 
-| Field         | Type                | Rules                                    |
-| ------------- | ------------------- | ---------------------------------------- |
-| `id`          | GeoNames integer    | Unique in the pinned snapshot            |
-| `name`        | string              | UTF-8 display name                       |
-| `asciiName`   | string              | Search and deterministic shard key       |
-| `countryCode` | ISO alpha-2 or `XK` | Resolves to a country record             |
-| `timeZone`    | IANA identifier     | Resolves to a supported time-zone record |
-| `population`  | integer             | Used only to rank same-name results      |
+| Field         | Type                | Rules                                                     |
+| ------------- | ------------------- | --------------------------------------------------------- |
+| `id`          | GeoNames integer    | Unique in the pinned snapshot                             |
+| `name`        | string              | UTF-8 display name                                        |
+| `asciiName`   | string              | Search and deterministic shard key                        |
+| `countryCode` | ISO alpha-2 or `XK` | Resolves to a country record                              |
+| `timeZone`    | IANA identifier     | Resolves to a supported time-zone record                  |
+| `population`  | integer             | Used only to rank same-name results                       |
+| `adminArea`   | string              | Administrative-area code used to disambiguate city labels |
 
 ## Location result
 
@@ -91,7 +91,6 @@ separately consented country lookup.
 | `locale`             | `en` or `nl`                 | Derived from browser languages, else `en` |
 | `theme`              | `system`, `light`, or `dark` | `system`                                  |
 | `comparisonTimeZone` | IANA identifier or null      | Device zone                               |
-| `globeOpen`          | boolean                      | `false`                                   |
 
 Display context resets on refresh.
 

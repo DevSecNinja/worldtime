@@ -48,9 +48,6 @@ describe('generated reference data', () => {
       source.name === 'IANA Time Zone Database'
     );
     expect(ianaSource?.version).toBe('2026c');
-    expect(
-      provenance.sources.find((source) => source.name === 'Natural Earth')?.version,
-    ).toBe('4.1.0');
     for (const source of provenance.sources) {
       for (const file of source.files ?? []) {
         const content = await readFile(resolve(process.cwd(), file.path));

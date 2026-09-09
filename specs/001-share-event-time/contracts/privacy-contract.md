@@ -11,7 +11,6 @@ Cache Storage may contain only:
 - HTML shell and web-app manifest;
 - same-origin icons, fonts, and visual assets;
 - generated public country/time-zone reference data;
-- the optional hashed globe chunk and same-origin geometry after the user opens it.
 
 ## Network actions
 
@@ -20,7 +19,6 @@ Cache Storage may contain only:
 | Open application          | Same-origin static assets                                   |
 | Create/view/convert event | None                                                        |
 | Search country/time zone  | None                                                        |
-| Open globe                | Same-origin globe code and geometry                         |
 | Enable browser location   | No app-originated request; browser/OS behavior is disclosed |
 | Consent to country lookup | One direct Nominatim reverse-geocoding request              |
 

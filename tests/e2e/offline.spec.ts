@@ -19,7 +19,7 @@ test('reopens a shared event offline after the application is cached', async ({ 
   const placeSearch = page.getByRole('combobox', { name: 'Country, city, or time zone' });
   await placeSearch.fill('Seattle');
   await expect(
-    page.getByRole('option', { name: /Seattle, United States.*America\/Los_Angeles/ }),
+    page.getByRole('option', { name: /Seattle, WA, United States.*America\/Los_Angeles/ }),
   ).toBeVisible();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.waitForFunction(() => navigator.serviceWorker?.controller);
@@ -33,7 +33,9 @@ test('reopens a shared event offline after the application is cached', async ({ 
   await expect(offlinePage.getByText(/Asia\/Kathmandu/).first()).toBeVisible();
   await offlinePage.getByRole('combobox', { name: 'Country, city, or time zone' }).fill('Seattle');
   await expect(
-    offlinePage.getByRole('option', { name: /Seattle, United States.*America\/Los_Angeles/ }),
+    offlinePage.getByRole('option', {
+      name: /Seattle, WA, United States.*America\/Los_Angeles/,
+    }),
   ).toBeVisible();
 });
 

@@ -19,11 +19,15 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
   const [status, setStatus] = useState<'idle' | 'locating' | 'ready' | 'error'>('idle');
   const [result, setResult] = useState<ZoneCandidates | null>(null);
   const [country, setCountry] = useState<string | null>(null);
+  const [selectedTimeZone, setSelectedTimeZone] = useState('');
+  const [showCountryLookup, setShowCountryLookup] = useState(true);
   const [lookupStatus, setLookupStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
   const locate = async () => {
     setStatus('locating');
     setCountry(null);
+    setSelectedTimeZone('');
+    setShowCountryLookup(true);
     try {
       const coordinates = await requestCoordinates();
       const candidates = await deriveTimeZoneCandidates(coordinates);
@@ -76,46 +80,58 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
             <div className='chip-row'>
               {result.timeZones.map((zone) => (
                 <button
-                  className='chip'
+                  className={`chip ${selectedTimeZone === zone ? 'selected' : ''}`}
                   type='button'
                   key={zone}
-                  onClick={() => onTimeZoneSelect(zone)}
+                  onClick={() => {
+                    setSelectedTimeZone(zone);
+                    onTimeZoneSelect(zone);
+                  }}
                 >
                   {zone}
                 </button>
               ))}
             </div>
-            <div className='consent-card'>
-              <h3>{t('countryLookupTitle')}</h3>
-              <p>{t('countryLookupDisclosure')}</p>
-              <p className='coordinate-preview'>
-                {result.coordinates.latitude.toFixed(4)}, {result.coordinates.longitude.toFixed(4)}
-                {' '}
-                ±{Math.round(result.coordinates.accuracyMeters)} m
-              </p>
-              <div className='button-row'>
-                <button className='button secondary' type='button' onClick={lookupCountry}>
-                  {lookupStatus === 'loading' ? t('countryLookupLoading') : t('lookupCountry')}
-                </button>
-              </div>
-              <details className='info-box'>
-                <summary>{t('countryLookupMoreInfo')}</summary>
-                <p>{t('countryLookupDetails')}</p>
-                <a
-                  href={COUNTRY_LOOKUP_PROVIDER.privacyUrl}
-                  target='_blank'
-                  rel='noreferrer'
-                >
-                  {t('providerPolicy')}
-                </a>
-              </details>
-              {country && <p className='status success' role='status'>{country}</p>}
-              {lookupStatus === 'error' && (
-                <p className='status error' role='status'>
-                  {navigator.onLine ? t('countryLookupError') : t('offlineLookup')}
+            {selectedTimeZone && showCountryLookup && (
+              <div className='consent-card'>
+                <h3>{t('countryLookupTitle')}</h3>
+                <p>{t('countryLookupDisclosure')}</p>
+                <p className='coordinate-preview'>
+                  {result.coordinates.latitude.toFixed(4)},{' '}
+                  {result.coordinates.longitude.toFixed(4)}{' '}
+                  ±{Math.round(result.coordinates.accuracyMeters)} m
                 </p>
-              )}
-            </div>
+                <div className='button-row'>
+                  <button className='button secondary' type='button' onClick={lookupCountry}>
+                    {lookupStatus === 'loading' ? t('countryLookupLoading') : t('lookupCountry')}
+                  </button>
+                  <button
+                    className='button ghost'
+                    type='button'
+                    onClick={() => setShowCountryLookup(false)}
+                  >
+                    {t('declineLookup')}
+                  </button>
+                </div>
+                <details className='info-box'>
+                  <summary>{t('countryLookupMoreInfo')}</summary>
+                  <p>{t('countryLookupDetails')}</p>
+                  <a
+                    href={COUNTRY_LOOKUP_PROVIDER.privacyUrl}
+                    target='_blank'
+                    rel='noreferrer'
+                  >
+                    {t('providerPolicy')}
+                  </a>
+                </details>
+                {country && <p className='status success' role='status'>{country}</p>}
+                {lookupStatus === 'error' && (
+                  <p className='status error' role='status'>
+                    {navigator.onLine ? t('countryLookupError') : t('offlineLookup')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

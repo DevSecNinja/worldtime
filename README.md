@@ -12,7 +12,7 @@ own zone or anywhere they choose.
 - Complete catalog coverage: 419 supported zones, 249 ISO countries plus Kosovo, and 235,694
   GeoNames cities (all places over 500 residents or administrative seats).
 - Fuzzy local search: typing `ams` surfaces `Europe/Amsterdam`.
-- Accessible search plus a lazy-loaded 3D globe.
+- Accessible unified country, city, and IANA time-zone search.
 - Optional location assistance with local coordinate-to-zone derivation.
 - Separate informed consent before an optional OpenStreetMap Nominatim country lookup.
 - English and Dutch, with system/light/dark themes that reset on refresh.
@@ -85,7 +85,6 @@ event fragment.
 | Locale authority               | Unicode CLDR 48.2 pinned JSON                               |
 | Country identifiers            | ISO 3166 through i18n-iso-countries 7.14.0                  |
 | City search                    | GeoNames cities500 snapshot from 2026-09-07                 |
-| Country geometry               | Natural Earth 4.1.0 through world-atlas 2.0.2               |
 | Search enrichment              | @vvo/tzdb 6.198.0                                           |
 | Coordinate candidates          | @photostructure/tz-lookup 11.6.1                            |
 

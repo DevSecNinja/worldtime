@@ -11,8 +11,9 @@ const requiredFiles = [
   'src/data/generated/timezones.json',
   'src/data/generated/countries.json',
   'src/data/generated/time-zone-rules.json',
+  'src/data/generated/time-zone-aliases.json',
   'public/data/generated/cities-index.json',
-  'public/data/generated/countries.geo.json',
+  'public/data/generated/countries.json',
 ];
 
 try {

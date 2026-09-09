@@ -2,6 +2,7 @@ import { Temporal } from 'temporal-polyfill';
 
 import type { EventPayload, Locale, TimeFormat } from './event';
 import {
+  canonicalTimeZone,
   formatSourceRepresentation,
   isSupportedTimeZone,
   isValidEventName,
@@ -116,7 +117,7 @@ export function parseEventFragment(fragment: string): ShareLinkResult {
       version: 1,
       name,
       local,
-      sourceTimeZone,
+      sourceTimeZone: canonicalTimeZone(sourceTimeZone),
       sourceOffset,
       instant,
     };

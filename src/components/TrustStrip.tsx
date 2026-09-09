@@ -22,19 +22,21 @@ const ClockIcon = () => (
 export function TrustStrip() {
   const { t } = useAppState();
   return (
-    <ul className='trust-strip' aria-label='Product qualities'>
-      <li>
-        <LockIcon />
-        {t('privacyLabel')}
-      </li>
-      <li>
-        <CloudIcon />
-        {t('offlineLabel')}
-      </li>
-      <li>
-        <ClockIcon />
-        {t('exactZoneLabel')}
-      </li>
-    </ul>
+    <aside className='trust-strip' aria-label={t('trustLabel')}>
+      <ul>
+        <li>
+          <LockIcon />
+          {t('privacyLabel')}
+        </li>
+        <li>
+          <CloudIcon />
+          {t('offlineLabel')}
+        </li>
+        <li>
+          <ClockIcon />
+          {t('exactZoneLabel')}
+        </li>
+      </ul>
+    </aside>
   );
 }

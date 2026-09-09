@@ -5,13 +5,12 @@ and do not disclose user queries to a search service.
 
 ## Coverage
 
-| Dataset             | Coverage in this release                                     |
-| ------------------- | ------------------------------------------------------------ |
-| IANA tzdb 2026c     | All 418 geographic entries from `zone.tab`, plus UTC         |
-| ISO 3166            | All 249 officially assigned alpha-2 territories              |
-| Unicode CLDR 48.2   | Pinned English and Dutch territory names                     |
-| GeoNames cities500  | 235,694 cities over 500 residents or administrative seats    |
-| Natural Earth 4.1.0 | 236 country/territory geometries, including a Kosovo mapping |
+| Dataset            | Coverage in this release                                  |
+| ------------------ | --------------------------------------------------------- |
+| IANA tzdb 2026c    | All 418 geographic entries from `zone.tab`, plus UTC      |
+| ISO 3166           | All 249 officially assigned alpha-2 territories           |
+| Unicode CLDR 48.2  | Pinned English and Dutch territory names                  |
+| GeoNames cities500 | 235,694 cities over 500 residents or administrative seats |
 
 The GeoNames definition is intentionally explicit: this is comprehensive city coverage, not a claim
 to include every hamlet, neighborhood, farm, mountain, or other named feature from the much larger
@@ -30,7 +29,7 @@ source cache, and lockfile-pinned packages. It writes:
 - `public/data/generated/cities-index.json`
 - `public/data/generated/city-prefixes/*.json`
 - `public/data/generated/cities/*.json`
-- matching public country, time-zone, provenance, rule, and globe geometry assets
+- matching public country, time-zone, provenance, and rule assets
 
 `scripts/package-reference-data.mjs` compresses these outputs into a GitHub prerelease asset.
 `reference-data.json` pins that asset. CI and deployment run `scripts/bootstrap-reference-data.mjs`,
@@ -61,7 +60,6 @@ and publishes a new data release and opens a small pointer/manifest pull request
 - IANA tzdb: public domain.
 - Unicode CLDR: Unicode License v3.
 - GeoNames: Creative Commons Attribution 4.0.
-- Natural Earth: public domain.
 - `@vvo/tzdb`: MIT.
 - `@photostructure/tz-lookup`: CC0 1.0.
 

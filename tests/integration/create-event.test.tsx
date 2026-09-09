@@ -30,7 +30,9 @@ describe('event creation flow', () => {
     );
     const picker = screen.getByRole('combobox', { name: 'Event time zone' });
     await user.type(picker, 'ams');
-    await user.click(screen.getByRole('option', { name: /Europe\/Amsterdam/ }));
+    await user.click(screen.getByRole('option', {
+      name: /^Europe\/Amsterdam Time zone/,
+    }));
     await user.click(screen.getByRole('button', { name: /Copy link/ }));
     expect(clipboardWrite).toHaveBeenCalledWith(
       expect.stringContaining('#v=1&'),
@@ -61,7 +63,7 @@ describe('event creation flow', () => {
       name: /Vila, Andorra.*Europe\/Andorra/,
     });
     await user.click(city);
-    expect(picker).toHaveValue('Europe/Andorra');
+    expect(picker).toHaveValue('Vila, Andorra');
     fetchSpy.mockRestore();
   });
 
@@ -78,7 +80,9 @@ describe('event creation flow', () => {
     await user.selectOptions(screen.getByLabelText('Minute'), '30');
     const picker = screen.getByRole('combobox', { name: 'Event time zone' });
     await user.type(picker, 'ams');
-    await user.click(screen.getByRole('option', { name: /Europe\/Amsterdam/ }));
+    await user.click(screen.getByRole('option', {
+      name: /^Europe\/Amsterdam Time zone/,
+    }));
     expect(screen.getByText('This clock time happens twice')).toBeInTheDocument();
     const copyButton = screen.getByRole('button', { name: /Copy link/ });
     expect(copyButton).toBeDisabled();
@@ -95,7 +99,9 @@ describe('event creation flow', () => {
     );
     const picker = screen.getByRole('combobox', { name: 'Event time zone' });
     await user.type(picker, 'ams');
-    await user.click(screen.getAllByRole('option', { name: /Europe\/Amsterdam/ })[0]);
+    await user.click(screen.getByRole('option', {
+      name: /^Europe\/Amsterdam Time zone/,
+    }));
     expect(screen.getByRole('button', { name: /Copy link/ })).toBeEnabled();
     await user.clear(picker);
     await user.type(picker, 'Tokyo');
@@ -118,7 +124,9 @@ describe('event creation flow', () => {
     await user.type(screen.getByLabelText('Event name'), 'Launch');
     const picker = screen.getByRole('combobox', { name: 'Event time zone' });
     await user.type(picker, 'ams');
-    await user.click(screen.getAllByRole('option', { name: /Europe\/Amsterdam/ })[0]);
+    await user.click(screen.getByRole('option', {
+      name: /^Europe\/Amsterdam Time zone/,
+    }));
     await user.click(screen.getByRole('button', { name: 'Share event' }));
 
     expect(nativeShare).toHaveBeenCalledWith(expect.objectContaining({

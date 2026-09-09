@@ -35,10 +35,15 @@ export type WallTimeResolution = 'earlier' | 'later';
 
 let timeZoneRules: Record<string, RuleSegment[]> = {};
 let supportedTimeZones = new Set<string>();
+let timeZoneAliases: Record<string, string> = {};
 
-export function initializeTimeZoneRules(rules: Record<string, RuleSegment[]>): void {
+export function initializeTimeZoneRules(
+  rules: Record<string, RuleSegment[]>,
+  aliases: Record<string, string> = {},
+): void {
   timeZoneRules = rules;
   supportedTimeZones = new Set(Object.keys(rules));
+  timeZoneAliases = aliases;
 }
 
 export function hasTimeZoneRules(): boolean {
@@ -62,7 +67,7 @@ const offsetString = (offsetMinutesWest: number): string => {
 };
 
 const offsetAt = (timeZone: string, epochMilliseconds: number): number => {
-  const rules = timeZoneRules[timeZone];
+  const rules = timeZoneRules[canonicalTimeZone(timeZone)];
   if (!rules) throw new RangeError('Unsupported time zone.');
   const segment = rules.find(({ until }) => epochMilliseconds < until);
   if (!segment) throw new RangeError('The event is outside the supported 1970-2100 range.');
@@ -81,7 +86,11 @@ const resolvedAt = (timeZone: string, epochMilliseconds: number): ResolvedWallTi
 };
 
 export function isSupportedTimeZone(timeZone: string): boolean {
-  return supportedTimeZones.has(timeZone);
+  return supportedTimeZones.has(canonicalTimeZone(timeZone));
+}
+
+export function canonicalTimeZone(timeZone: string): string {
+  return timeZoneAliases[timeZone] ?? timeZone;
 }
 
 export function parseLocalDateTime(local: string): Temporal.PlainDateTime {
@@ -105,6 +114,7 @@ export function classifyWallTime(localValue: string, timeZone: string): WallTime
     if (!isSupportedTimeZone(timeZone)) {
       return { kind: 'invalid', message: 'Unsupported time zone.' };
     }
+    const canonicalZone = canonicalTimeZone(timeZone);
     const local = parseLocalDateTime(localValue);
     const localEpoch = Date.UTC(
       local.year,
@@ -114,12 +124,12 @@ export function classifyWallTime(localValue: string, timeZone: string): WallTime
       local.minute,
     );
     const uniqueOffsets = [
-      ...new Set(timeZoneRules[timeZone].map(({ offsetMinutesWest }) => offsetMinutesWest)),
+      ...new Set(timeZoneRules[canonicalZone].map(({ offsetMinutesWest }) => offsetMinutesWest)),
     ];
     const candidates = uniqueOffsets
       .map((offsetMinutesWest) => localEpoch + offsetMinutesWest * 60_000)
       .filter((epoch, index, values) => values.indexOf(epoch) === index)
-      .map((epoch) => resolvedAt(timeZone, epoch))
+      .map((epoch) => resolvedAt(canonicalZone, epoch))
       .sort((left, right) => left.epochMilliseconds - right.epochMilliseconds);
     const valid = candidates.filter((candidate) => candidate.local === localValue);
 
@@ -180,7 +190,7 @@ export function createEventPayload(
     version: 1,
     name: trimmedName || null,
     local: resolved.local,
-    sourceTimeZone: timeZone,
+    sourceTimeZone: canonicalTimeZone(timeZone),
     sourceOffset: resolved.offset,
     instant: resolved.instant,
   };
@@ -291,5 +301,6 @@ export function formatEventInZone(
 
 export function currentDeviceTimeZone(): string {
   const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return detected && isSupportedTimeZone(detected) ? detected : 'UTC';
+  const canonical = canonicalTimeZone(detected);
+  return canonical && isSupportedTimeZone(canonical) ? canonical : 'UTC';
 }

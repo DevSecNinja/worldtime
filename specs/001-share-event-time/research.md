@@ -47,21 +47,20 @@ a checksummed GitHub data-release asset:
 1. IANA tzdb release identifiers and links for canonical time-zone provenance.
 2. `@vvo/tzdb` 6.198.0 for browser-friendly zone, city, country, and alias metadata.
 3. ISO 3166 mappings through `i18n-iso-countries` 7.14.0.
-4. Natural Earth 4.1.0 country geometry through `world-atlas` 2.0.2.
-5. Unicode CLDR release 48.2 as the documented locale-data authority used by browser `Intl`
+4. Unicode CLDR release 48.2 as the documented locale-data authority used by browser `Intl`
    implementations.
-6. `@photostructure/tz-lookup` 11.6.1 for local coordinate-to-zone candidates, whose generated
+5. `@photostructure/tz-lookup` 11.6.1 for local coordinate-to-zone candidates, whose generated
    dataset is CC0 and traceable to open time-zone boundary sources.
-7. A pinned 2026-09-08 GeoNames cities500 snapshot for 235,694 cities over 500 residents or
+6. A pinned 2026-09-08 GeoNames cities500 snapshot for 235,694 cities over 500 residents or
    administrative seats, licensed CC BY 4.0.
 
 The generated provenance manifest records package/source versions, URLs, licenses, retrieval date,
 hashes, counts, and transformation details.
 
-**Rationale**: IANA, Unicode, ISO, and Natural Earth are stable public sources. Build-time adapters
-make the data small and browser-ready while retaining a reproducible chain of custody. Browser
-`Intl` remains the actual rule engine, so validation compares all generated identifiers against
-every supported target browser.
+**Rationale**: IANA, Unicode, ISO, and GeoNames are stable public sources. Build-time adapters make
+the data small and browser-ready while retaining a reproducible chain of custody. Browser `Intl`
+remains the actual rule engine, so validation compares all generated identifiers against every
+supported target browser.
 
 **Alternatives considered**:
 
@@ -73,7 +72,6 @@ every supported target browser.
 
 - [IANA tz database overview](https://data.iana.org/time-zones/tz-link.html)
 - [Unicode CLDR releases](https://cldr.unicode.org/index/downloads)
-- [Natural Earth terms](https://www.naturalearthdata.com/about/terms-of-use/)
 - [timezone-boundary-builder](https://github.com/evansiroky/timezone-boundary-builder)
 - [tzdb metadata](https://github.com/vvo/tzdb)
 
@@ -83,7 +81,7 @@ every supported target browser.
 
 **Rationale**: Hundreds of bounded records are inexpensive enough to validate on every change. The
 suite catches upstream renames, unmapped countries, invalid zones, duplicate aliases, inaccessible
-search entries, geometry mismatches, and browser tzdb drift.
+search entries, and browser tzdb drift.
 
 **Validation layers**:
 
@@ -98,8 +96,6 @@ search entries, geometry mismatches, and browser tzdb drift.
   repeated, and skipped wall-clock classification.
 - Browser tests iterate the full zone catalog in Chromium, Firefox, and WebKit, with representative
   full UI flows per region and edge-offset class.
-- Globe tests verify every rendered country geometry resolves to a supported ISO code and every
-  mapped country can reach one or more selectable zones.
 
 ## Time-zone search
 
@@ -148,17 +144,11 @@ service.
 
 **Source**: [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/)
 
-## Globe
+## Deferred globe exploration
 
-**Decision**: Lazy-load `react-globe.gl` 2.38.0 and same-origin Natural Earth-derived country
-geometry only when requested.
-
-**Rationale**: It provides robust orbit and click interaction. Its large Three.js bundle is excluded
-from the initial chunk and service-worker precache. The permanently visible combobox is the
-accessible equivalent and the only required interaction.
-
-**Alternative considered**: COBE is much smaller but requires custom hit testing and selection
-semantics that increase correctness and accessibility risk.
+**Decision**: Keep the release focused on the complete accessible search experience. The
+experimental globe implementation is preserved on the dedicated Globe redesign branch and tracked
+separately so its performance and visual design can improve without delaying the core product.
 
 ## Localization and themes
 
@@ -175,8 +165,7 @@ support correct English/Dutch output.
 prompt-based updates, and a relative manifest scope.
 
 **Rationale**: One artifact works below `/worldtime/` and at `/`. Core hashed assets and generated
-reference data are precached. Globe chunks/assets are runtime-cached only after the user opens them.
-Reverse-geocoding responses are never intercepted or cached.
+reference metadata are precached. Reverse-geocoding responses are never intercepted or cached.
 
 **Source**: [Vite static deployment](https://vite.dev/guide/static-deploy.html)
 

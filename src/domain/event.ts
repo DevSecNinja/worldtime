@@ -35,7 +35,6 @@ export interface CountryRecord {
   timeZones: string[];
   requiresManualTimeZone: boolean;
   cityCount: number;
-  hasGeometry: boolean;
 }
 
 export type CityRecord = [
@@ -46,6 +45,7 @@ export type CityRecord = [
   timeZone: string,
   population: number,
   searchTokens: string[],
+  adminArea: string,
 ];
 
 export interface LocationCoordinates {

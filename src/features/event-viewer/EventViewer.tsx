@@ -17,6 +17,7 @@ function TimeCard({
   zone,
   offset,
   accent = false,
+  compact = false,
 }: {
   label: string;
   date: string;
@@ -24,9 +25,10 @@ function TimeCard({
   zone: string;
   offset: string;
   accent?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <article className={`time-card ${accent ? 'accent' : ''}`}>
+    <article className={`time-card ${accent ? 'accent' : ''} ${compact ? 'compact' : ''}`}>
       <p className='time-label'>{label}</p>
       <p className='time-main'>{time}</p>
       <p className='time-date'>{date}</p>
@@ -70,17 +72,14 @@ export function EventViewer({ event, onCreateAnother }: {
       <section className='time-grid' aria-label={event.name ?? t('genericEvent')}>
         {sameTimeContext
           ? (
-            <div className='same-time-card'>
-              <TimeCard
-                label={t('sameTimeLabel')}
-                date={deviceDisplay.date}
-                time={deviceDisplay.time}
-                zone={deviceDisplay.zone}
-                offset={deviceDisplay.offset}
-                accent
-              />
-              <p>{t('sameTimeInfo')}</p>
-            </div>
+            <TimeCard
+              label={t('sameTimeLabel')}
+              date={deviceDisplay.date}
+              time={deviceDisplay.time}
+              zone={deviceDisplay.zone}
+              offset={deviceDisplay.offset}
+              accent
+            />
           )
           : (
             <>
@@ -101,15 +100,6 @@ export function EventViewer({ event, onCreateAnother }: {
               />
             </>
           )}
-        {comparisonTimeZone && comparisonTimeZone !== deviceTimeZone && (
-          <TimeCard
-            label={t('selectedBadge')}
-            date={comparisonDisplay.date}
-            time={comparisonDisplay.time}
-            zone={comparisonDisplay.zone}
-            offset={comparisonDisplay.offset}
-          />
-        )}
       </section>
 
       {rulesChanged && <p className='status warning' role='status'>{t('rulesChanged')}</p>}
@@ -118,6 +108,23 @@ export function EventViewer({ event, onCreateAnother }: {
         <LocationExplorer
           timeZone={comparisonTimeZone}
           onTimeZoneChange={setComparisonTimeZone}
+          comparison={comparisonTimeZone
+            ? (
+              <>
+                <TimeCard
+                  label={t('selectedBadge')}
+                  date={comparisonDisplay.date}
+                  time={comparisonDisplay.time}
+                  zone={comparisonDisplay.zone}
+                  offset={comparisonDisplay.offset}
+                  compact
+                />
+                {comparisonTimeZone === deviceTimeZone && (
+                  <p className='comparison-same'>{t('sameAsDevice')}</p>
+                )}
+              </>
+            )
+            : null}
         />
       </div>
 

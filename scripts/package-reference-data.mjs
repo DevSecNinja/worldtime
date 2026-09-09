@@ -5,7 +5,7 @@ import { dirname, relative, resolve } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 
 const root = resolve(import.meta.dirname, '..');
-const packageFormatVersion = 2;
+const packageFormatVersion = 7;
 const manifest = JSON.parse(await readFile(resolve(root, 'data/upstream/manifest.json'), 'utf8'));
 const provenance = JSON.parse(
   await readFile(resolve(root, 'src/data/generated/provenance.json'), 'utf8'),

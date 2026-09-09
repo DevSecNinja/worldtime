@@ -15,6 +15,10 @@
         {
           "path": "data/upstream/iana/2026c/iso3166.tab",
           "sha256": "837c80785080c8433fd9d4ea87e78f161ac7a40389301c5153d4f90198baeb2a"
+        },
+        {
+          "path": "data/upstream/iana/2026c/backward",
+          "sha256": "d2f4c8953f204982ddf4dc0c2debf41b2464de376dad7d546d0fc70f889fa706"
         }
       ]
     },
@@ -46,18 +50,11 @@
       "usage": "Cities with population over 500 or administrative seats"
     },
     {
-      "name": "Natural Earth",
-      "version": "4.1.0",
-      "url": "https://www.naturalearthdata.com/",
-      "license": "Public domain",
-      "usage": "Country geometry distributed through world-atlas 2.0.2"
-    },
-    {
       "name": "ISO 3166 adapter",
       "version": "i18n-iso-countries 7.14.0",
       "url": "https://github.com/michaelwittig/node-i18n-iso-countries",
       "license": "MIT",
-      "usage": "ISO numeric to alpha-2 conversion for Natural Earth geometry"
+      "usage": "ISO alpha-2 and numeric country identifier conversion"
     },
     {
       "name": "tzdb browser metadata adapter",

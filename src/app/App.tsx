@@ -94,10 +94,6 @@ export function App() {
             GeoNames (CC BY 4.0)
           </a>
           {' · '}
-          <a href='https://www.naturalearthdata.com/' target='_blank' rel='noreferrer'>
-            Natural Earth
-          </a>
-          {' · '}
           <a
             href='https://www.openstreetmap.org/copyright'
             target='_blank'

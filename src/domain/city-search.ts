@@ -24,6 +24,7 @@ export interface CitySearchResult {
   countryName: string;
   timeZone: string;
   population: number;
+  adminArea: string;
 }
 
 export interface CitySearchPage {
@@ -74,12 +75,18 @@ const matchRank = (record: CityRecord, query: string, locale: Locale): number | 
     country?.names.nl ?? '',
     country?.names[locale] ?? '',
   ].map(normalizePlaceName);
+  const adminTerm = normalizePlaceName(record[7]);
+  const qualifierTerms = [
+    adminTerm,
+    ...countryTerms,
+    ...countryTerms.map((countryTerm) => `${adminTerm} ${countryTerm}`.trim()),
+  ];
 
   for (const token of record[6]) {
     if (token === query) return 0;
     if (query.startsWith(`${token} `)) {
       const qualifier = query.slice(token.length + 1);
-      if (countryTerms.some((term) => term.startsWith(qualifier))) return 0;
+      if (qualifierTerms.some((term) => term.startsWith(qualifier))) return 0;
     }
     if (token.startsWith(query)) return 1;
   }
@@ -129,6 +136,7 @@ export function searchCityRecords(
       countryName: getCountry(record[3])?.names[locale] ?? record[3],
       timeZone: record[4],
       population: record[5],
+      adminArea: record[7],
     })),
   };
 }

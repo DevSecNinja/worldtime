@@ -37,8 +37,7 @@ npm run build
    occurs.
 7. Open the separate country-lookup disclosure, decline, and confirm manual search still works.
    Repeat with consent and confirm only one Nominatim request occurs.
-8. Open the globe, select a country, and choose an exact time zone. Repeat the same task with
-   keyboard-only search.
+8. Search for a country with multiple zones and choose an exact time zone using only the keyboard.
 9. Switch English/Dutch and system/light/dark modes, then refresh and confirm the choices reset.
 10. Complete one online visit, switch the browser offline, and create/open an event link.
 11. Run the catalog suites and confirm every generated country and IANA zone is covered.

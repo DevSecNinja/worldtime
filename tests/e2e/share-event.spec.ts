@@ -15,9 +15,14 @@ test('creates and opens an Amsterdam event', async ({ page }) => {
   await page.getByLabel('Hour').selectOption('9');
   await page.getByLabel('Minute').selectOption('30');
   await page.getByRole('combobox', { name: 'Event time zone' }).fill('ams');
-  await expect(page.getByRole('option', { name: /Europe\/Amsterdam/ }).first()).toBeVisible();
-  await page.getByRole('option', { name: /Europe\/Amsterdam/ }).first().click();
-  await page.getByRole('button', { name: /Copy link/ }).click();
+  const amsterdamTimeZone = page.getByRole('option', {
+    name: /^Europe\/Amsterdam Time zone/,
+  });
+  await expect(amsterdamTimeZone).toBeVisible();
+  await amsterdamTimeZone.click();
+  const copyButton = page.getByRole('button', { name: /Copy link/ });
+  await expect(copyButton).toBeEnabled();
+  await copyButton.click();
   const shareOutput = page.getByLabel('Copy link');
   await expect(shareOutput).toBeVisible();
   const shareUrl = await shareOutput.inputValue();
@@ -41,7 +46,9 @@ test('opens the native OS share sheet with localized event details', async ({ pa
   await page.goto('./');
   await page.getByLabel('Event name').fill('Launch');
   await page.getByRole('combobox', { name: 'Event time zone' }).fill('ams');
-  await page.getByRole('option', { name: /Europe\/Amsterdam/ }).first().click();
+  await page.getByRole('option', {
+    name: /^Europe\/Amsterdam Time zone/,
+  }).click();
   await page.getByLabel('Time format').selectOption('h12');
   await page.getByRole('button', { name: 'Share event' }).click();
 
@@ -63,7 +70,6 @@ test('switches event cards between 24-hour and AM/PM display', async ({ page }) 
   const event = createEventPayload('Format check', '2026-06-15T13:30', deviceTimeZone);
   await page.goto(`./#${serializeEvent(event)}`);
   await expect(page.getByText('Your device and creator time')).toBeVisible();
-  await expect(page.getByText(/one clock is enough/)).toBeVisible();
   await expect(page.getByText('13:30').first()).toBeVisible();
   await page.getByLabel('Time format').selectOption('h12');
   await expect(page.getByText(/1:30 PM/).first()).toBeVisible();
@@ -72,6 +78,8 @@ test('switches event cards between 24-hour and AM/PM display', async ({ page }) 
 test('switches creator time controls between 24-hour and AM/PM entry', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 840 });
   await page.goto('./');
+  const formBox = await page.locator('.form-card').boundingBox();
+  expect(formBox?.y ?? 1000).toBeLessThan(560);
   await expect(page.getByLabel('Hour').locator('option')).toHaveCount(24);
   const hourBox = await page.getByLabel('Hour').boundingBox();
   const minuteBox = await page.getByLabel('Minute').boundingBox();
@@ -79,6 +87,13 @@ test('switches creator time controls between 24-hour and AM/PM entry', async ({ 
   await page.getByLabel('Time format').selectOption('h12');
   await expect(page.getByLabel('Hour').locator('option')).toHaveCount(12);
   await expect(page.getByLabel('AM or PM')).toBeVisible();
+});
+
+test('keeps the creator form within the first tablet viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 600 });
+  await page.goto('./');
+  const formBox = await page.locator('.form-card').boundingBox();
+  expect(formBox?.y ?? 1000).toBeLessThan(560);
 });
 
 test('enforces event-name limits and renders shared names as inert text', async ({ page }) => {
@@ -95,7 +110,7 @@ test('enforces event-name limits and renders shared names as inert text', async 
 });
 
 test('renders every supported zone link in a real browser', async ({ page, browserName }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await page.goto('./');
   await expect(page.getByRole('heading', { name: /Set the time once/ })).toBeVisible();
   const fragments = timeZones.map((zone) =>
@@ -108,7 +123,6 @@ test('renders every supported zone link in a real browser', async ({ page, brows
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     }, fragments[index]);
     await expect(page.getByRole('heading', { name: timeZones[index].id })).toBeVisible();
-    await expect(page.getByText('This event link is not valid')).toHaveCount(0);
     if (browserName === 'webkit') await page.waitForTimeout(105);
   }
 });

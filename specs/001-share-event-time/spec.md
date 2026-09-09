@@ -8,9 +8,9 @@
 
 **Input**: User description: "Create a modern, frontend-only event time sharing PWA where creators
 define an event and share a readable link. Recipients see the event in their time zone and can
-explore locations on a globe or through search. Support optional, transparent location services,
-English and Dutch, light/dark/system themes, offline use, GitHub Pages deployment, and no local
-event-data storage."
+explore locations through search. Support optional, transparent location services, English and
+Dutch, light/dark/system themes, offline use, GitHub Pages deployment, and no local event-data
+storage."
 
 ## User Scenarios & Testing _(mandatory)_
 
@@ -73,30 +73,26 @@ verify that every display refers to the same instant.
 
 ### User Story 3 - Explore Another Location (Priority: P2)
 
-A recipient moves an interactive digital globe or uses an accessible search interface to choose any
-cataloged country, GeoNames city, or time zone and see the event time there.
+A recipient uses an accessible search interface to choose any cataloged country, GeoNames city, or
+time zone and see the event time there.
 
-**Why this priority**: It supports travel and distributed groups while providing an engaging visual
-experience and an equivalent accessible path.
+**Why this priority**: It supports travel and distributed groups through one predictable,
+keyboard-accessible path.
 
-**Independent Test**: Select locations through both globe and search, including a multi-zone
-country, and verify the event is converted only after an exact time zone is selected.
+**Independent Test**: Select cities, single-zone countries, and multi-zone countries through search
+and verify the event is converted only after an exact time zone is selected.
 
 **Acceptance Scenarios**:
 
-1. **Given** the event viewer is online or has previously cached the globe resources, **When** the
-   recipient rotates and selects on the globe, **Then** the selected area is identified and relevant
-   time-zone choices are offered.
-2. **Given** the globe cannot load, motion is reduced, or the recipient uses keyboard or assistive
-   technology, **When** they choose the search option, **Then** all conversion capabilities remain
-   available without the globe.
-3. **Given** a country spans multiple time zones, **When** the recipient selects it, **Then** the
+1. **Given** a country spans multiple time zones, **When** the recipient selects it, **Then** the
    interface requires an exact city or IANA time zone before showing a converted time.
-4. **Given** the recipient types a partial city or identifier, **When** results appear, **Then**
+2. **Given** the recipient types a partial city or identifier, **When** results appear, **Then**
    fuzzy matching ranks likely time zones ahead of weak matches.
-5. **Given** a city with more than 500 residents or an administrative seat exists in the pinned
+3. **Given** a city with more than 500 residents or an administrative seat exists in the pinned
    GeoNames catalog, **When** the recipient types the beginning of its name, **Then** the city and
    exact IANA time zone are available for selection.
+4. **Given** a recipient types a city followed by a partial country name, **When** results appear,
+   **Then** matching city-country combinations are ranked prominently.
 
 ---
 
@@ -175,7 +171,6 @@ a previously copied event link while switching theme and language.
 - Browser geolocation returns low-accuracy coordinates near a country or time-zone border.
 - The reverse-geocoding service rate-limits, times out, changes response shape, or is unreachable
   because the app is offline.
-- WebGL is unavailable, disabled, resource-constrained, or causes context loss.
 - A user has reduced motion, high contrast, forced colors, 200% zoom, or a narrow mobile viewport
   enabled.
 - The app is hosted below a repository subpath and a shared URL is opened directly.
@@ -205,8 +200,8 @@ a previously copied event link while switching theme and language.
   and a relative-time summary.
 - **FR-010**: Invalid shared-link data MUST be rejected with a localized explanation and recovery
   action; it MUST NOT silently fall back to a different instant.
-- **FR-011**: The recipient MUST be able to explore locations on an interactive globe and through an
-  equivalent accessible search interface.
+- **FR-011**: The recipient MUST be able to explore countries, cities, and time zones through one
+  accessible search interface.
 - **FR-012**: Country selection MUST require an exact time-zone or city confirmation whenever more
   than one time zone is possible.
 - **FR-013**: Browser geolocation MUST be initiated only by an explicit action and preceded by a
@@ -251,8 +246,6 @@ a previously copied event link while switching theme and language.
   the choice applies immediately to event cards and native-share text and remains ephemeral.
 - **FR-030**: The event viewer's primary location field MUST search both countries and cities, and
   selecting a city MUST choose its mapped country and exact IANA time zone.
-- **FR-031**: A globe preview MUST be visible by default on the event viewer, and activating it MUST
-  load the movable interactive globe while retaining a control to close it.
 - **FR-032**: The creator's location assistant MUST remain hidden until the highlighted first search
   option is selected.
 - **FR-033**: The location-country disclosure MUST use concise primary text with expandable details
@@ -273,6 +266,18 @@ a previously copied event link while switching theme and language.
   upstream metadata and download only changed snapshots.
 - **FR-041**: Initial PWA installation MUST NOT download the full city catalog; city prefix and data
   shards MUST be fetched and cached only for searches the user performs.
+- **FR-042**: City results MUST retain a human-readable place label after selection and include
+  administrative-area context where available to disambiguate duplicate names.
+- **FR-043**: A selected comparison MUST appear directly below the search interaction and provide
+  explicit feedback even when it has the same time as the device.
+- **FR-044**: Multi-zone country selection MUST ask the user to refine by city or exact IANA zone
+  rather than presenting an ungrouped wall of technical identifiers.
+- **FR-045**: On narrow mobile viewports, the creator form MUST begin within the first viewport and
+  compact comparison results MUST not overflow in English, Dutch, 24-hour, or AM/PM modes.
+- **FR-046**: Optional country lookup MUST appear only after a likely time zone is selected and MUST
+  provide an explicit decline action that preserves the selected zone.
+- **FR-047**: The interactive globe is excluded from this release and preserved on a separate branch
+  for the dedicated follow-up issue.
 - **FR-040**: Deployment and releases MUST call the pinned reusable Pages and Release Please
   workflows from `DevSecNinja/.github`.
 
@@ -300,7 +305,7 @@ a previously copied event link while switching theme and language.
 - **SC-003**: Time-zone suggestions appear within 300 milliseconds for typical searches on a
   mid-range mobile device, and `Europe/Amsterdam` appears within the first five results for `ams`.
 - **SC-004**: A recipient sees the converted event summary within 2 seconds of opening a cached link
-  on a mid-range mobile device, excluding optional globe loading.
+  on a mid-range mobile device.
 - **SC-005**: Core event creation, parsing, search, and conversion complete successfully with the
   network disabled after one online visit.
 - **SC-006**: Automated accessibility evaluation reports no serious or critical issues, and every
@@ -323,7 +328,7 @@ a previously copied event link while switching theme and language.
 ## Assumptions
 
 - Modern evergreen browsers are the primary target, with graceful fallback for browsers that lack
-  WebGL, clipboard access, installation prompts, or advanced date controls.
+  clipboard access, installation prompts, or advanced date controls.
 - The browser's device time zone is the initial recipient default, but it is never treated as proof
   of physical location.
 - Public time-zone and country reference data can be bundled and cached because it contains no user

@@ -30,8 +30,6 @@ Each generated release records:
 - Every GeoNames cities500 record resolves to a cataloged country and supported IANA time zone and
   is routed to the shard selected by its normalized name.
 - Every time zone is reachable by its identifier and at least one human-facing token.
-- Every country geometry maps to an ISO country code or is explicitly excluded with a documented
-  reason.
 - All country-to-zone references resolve to catalog entries.
 - Alias normalization produces no unresolved or unintentionally duplicate aliases.
 - `ams` ranks `Europe/Amsterdam` in the first five results.
@@ -39,5 +37,5 @@ Each generated release records:
 ## Update policy
 
 Renovate tracks package-based sources. A scheduled/manual reference-data workflow regenerates
-artifacts and runs complete-catalog tests. Any IANA, CLDR, ISO, Natural Earth, or boundary-data
-update that changes output is reviewed as a data change with its provenance diff.
+artifacts and runs complete-catalog tests. Any IANA, CLDR, ISO, GeoNames, or boundary-data update
+that changes output is reviewed as a data change with its provenance diff.

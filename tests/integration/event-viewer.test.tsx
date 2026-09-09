@@ -75,7 +75,6 @@ describe('event viewer', () => {
       </AppStateProvider>,
     );
     expect(screen.getByText('Your device and creator time')).toBeInTheDocument();
-    expect(screen.getByText(/one clock is enough/)).toBeInTheDocument();
     expect(screen.queryByText('Creator time')).not.toBeInTheDocument();
   });
 });

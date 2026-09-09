@@ -8,13 +8,12 @@ import nlLocaleNames from 'cldr-localenames-full/main/nl/territories.json' with 
 import { strFromU8, unzipSync } from 'fflate';
 import countries from 'i18n-iso-countries';
 import moment from 'moment-timezone';
-import { feature } from 'topojson-client';
-import world from 'world-atlas/countries-50m.json' with { type: 'json' };
 
 const root = resolve(import.meta.dirname, '..');
 const upstreamManifestPath = resolve(root, 'data/upstream/manifest.json');
 const zoneTabPath = resolve(root, 'data/upstream/iana/2026c/zone.tab');
 const countryTabPath = resolve(root, 'data/upstream/iana/2026c/iso3166.tab');
+const backwardPath = resolve(root, 'data/upstream/iana/2026c/backward');
 const outputDir = resolve(root, 'src/data/generated');
 const publicOutputDir = resolve(root, 'public/data/generated');
 
@@ -61,9 +60,10 @@ const cityArchivePath = process.env.GEONAMES_ARCHIVE
   ? resolve(process.env.GEONAMES_ARCHIVE)
   : resolve(root, '.cache/reference-data/cities500.zip');
 
-const [zoneRows, countryRows, citiesZip] = await Promise.all([
+const [zoneRows, countryRows, backwardSource, citiesZip] = await Promise.all([
   readRows(zoneTabPath),
   readRows(countryTabPath),
+  readFile(backwardPath, 'utf8'),
   readFile(cityArchivePath),
 ]);
 if (sha256(citiesZip) !== citySource.archive.sha256) {
@@ -129,12 +129,37 @@ timeZones.push({
   searchText: 'utc coordinated universal time greenwich',
 });
 const supportedZoneIds = new Set(timeZones.map(({ id }) => id));
-const canonicalZoneByAlias = new Map();
-for (const metadata of rawTimeZones) {
-  const canonical = metadata.group.find((zone) => supportedZoneIds.has(zone));
-  if (!canonical) continue;
-  for (const alias of metadata.group) canonicalZoneByAlias.set(alias, canonical);
+const linkTargetByAlias = new Map(
+  backwardSource
+    .split(/\r?\n/)
+    .map((line) => line.match(/^Link\s+(\S+)\s+(\S+)/))
+    .filter(Boolean)
+    .map((match) => [match[2], match[1]]),
+);
+const explicitCanonicalTargets = new Map([
+  ['Etc/GMT', 'UTC'],
+  ['Etc/UTC', 'UTC'],
+]);
+const resolveCanonicalLink = (identifier, visited = new Set()) => {
+  if (supportedZoneIds.has(identifier)) return identifier;
+  const explicitTarget = explicitCanonicalTargets.get(identifier);
+  if (explicitTarget) return explicitTarget;
+  if (visited.has(identifier)) return undefined;
+  const target = linkTargetByAlias.get(identifier);
+  if (!target) return undefined;
+  visited.add(identifier);
+  return resolveCanonicalLink(target, visited);
+};
+const canonicalZoneByAlias = new Map(explicitCanonicalTargets);
+for (const alias of linkTargetByAlias.keys()) {
+  const canonical = resolveCanonicalLink(alias);
+  if (canonical) canonicalZoneByAlias.set(alias, canonical);
 }
+const timeZoneAliases = Object.fromEntries(
+  [...canonicalZoneByAlias.entries()]
+    .filter(([alias, canonical]) => alias !== canonical && !supportedZoneIds.has(alias))
+    .sort(([left], [right]) => left.localeCompare(right)),
+);
 
 const citiesArchive = unzipSync(citiesZip);
 const citiesText = strFromU8(citiesArchive['cities500.txt']);
@@ -149,6 +174,7 @@ for (const row of citiesText.split(/\r?\n/)) {
   const columns = row.split('\t');
   const [id, name, asciiName] = columns;
   const countryCode = columns[8];
+  const adminArea = columns[10];
   const population = Number(columns[14]) || 0;
   const sourceTimeZone = columns[17];
   const timeZone = supportedZoneIds.has(sourceTimeZone)
@@ -170,6 +196,7 @@ for (const row of citiesText.split(/\r?\n/)) {
     timeZone,
     population,
     searchTokens,
+    adminArea,
   ];
   const shard = cityShards.get(bucket) ?? [];
   shard.push(record);
@@ -191,33 +218,6 @@ for (const shard of cityShards.values()) {
   );
 }
 
-const geometryCollection = feature(world, world.objects.countries);
-const geometryByCountry = new Map();
-const excludedGeometry = [];
-
-for (const item of geometryCollection.features) {
-  const alpha2 = item.properties?.name === 'Kosovo'
-    ? 'XK'
-    : countries.numericToAlpha2(String(item.id).padStart(3, '0'));
-  if (!alpha2) {
-    excludedGeometry.push({
-      id: String(item.id),
-      name: item.properties?.name ?? 'Unknown',
-      reason: 'Natural Earth geometry has no ISO 3166 numeric mapping',
-    });
-    continue;
-  }
-
-  geometryByCountry.set(alpha2, {
-    ...item,
-    id: alpha2,
-    properties: {
-      alpha2,
-      name: item.properties?.name ?? countryEnglishNames.get(alpha2) ?? alpha2,
-    },
-  });
-}
-
 const countryCatalog = [...countryEnglishNames.entries()]
   .map(([alpha2, ianaName]) => {
     const numeric = countries.alpha2ToNumeric(alpha2);
@@ -236,7 +236,6 @@ const countryCatalog = [...countryEnglishNames.entries()]
         : [],
       requiresManualTimeZone: mappedTimeZones.length === 0 && alpha2 !== 'XK',
       cityCount: cityCountsByCountry.get(alpha2) ?? 0,
-      hasGeometry: geometryByCountry.has(alpha2),
     };
   })
   .sort((left, right) => left.alpha2.localeCompare(right.alpha2));
@@ -264,6 +263,8 @@ const timeZoneRules = Object.fromEntries(
   }),
 );
 
+await rm(outputDir, { recursive: true, force: true });
+await rm(publicOutputDir, { recursive: true, force: true });
 const artifacts = [];
 artifacts.push(await writeJson(resolve(outputDir, 'timezones.json'), timeZones));
 artifacts.push(await writeJson(resolve(outputDir, 'countries.json'), countryCatalog));
@@ -271,12 +272,8 @@ artifacts.push(await writeJson(resolve(publicOutputDir, 'timezones.json'), timeZ
 artifacts.push(await writeJson(resolve(publicOutputDir, 'countries.json'), countryCatalog));
 artifacts.push(await writeJson(resolve(outputDir, 'time-zone-rules.json'), timeZoneRules));
 artifacts.push(await writeJson(resolve(publicOutputDir, 'time-zone-rules.json'), timeZoneRules));
-artifacts.push(
-  await writeJson(resolve(publicOutputDir, 'countries.geo.json'), {
-    type: 'FeatureCollection',
-    features: [...geometryByCountry.values()],
-  }),
-);
+artifacts.push(await writeJson(resolve(outputDir, 'time-zone-aliases.json'), timeZoneAliases));
+artifacts.push(await writeJson(resolve(publicOutputDir, 'time-zone-aliases.json'), timeZoneAliases));
 const cityOutputDir = resolve(publicOutputDir, 'cities');
 await rm(cityOutputDir, { recursive: true, force: true });
 const cityIndex = {};
@@ -320,23 +317,19 @@ const provenance = {
   generatedAt: `${upstreamManifest.retrievedAt}T00:00:00.000Z`,
   sources: upstreamManifest.sources,
   transformations: [
-    'Parsed all non-comment records from IANA tzdb 2026c zone.tab and iso3166.tab.',
-    'Enriched search metadata from @vvo/tzdb without using its offset values.',
+    'Parsed canonical zones, countries, and authoritative Link aliases from IANA tzdb 2026c.',
+    'Enriched search metadata from @vvo/tzdb without using its aliases or offset values.',
     `Compiled ${moment.tz.dataVersion} offset transitions surrounding the supported 1970-2100 wall-time range.`,
     'Localized ISO country codes from pinned CLDR 48.2 English and Dutch territory data.',
     'Normalized GeoNames cities500 records into two-character ASCII shards with a native-name prefix index.',
-    'Converted Natural Earth-derived world-atlas TopoJSON to ISO-keyed GeoJSON.',
   ],
   counts: {
     timeZones: timeZones.length,
     countries: countryCatalog.length,
-    countriesWithGeometry: geometryByCountry.size,
-    excludedGeometry: excludedGeometry.length,
     ruleSets: Object.keys(timeZoneRules).length,
     cities: cityRecordCount,
     unsupportedCities: unsupportedCityCount,
   },
-  excludedGeometry,
   artifacts,
 };
 
@@ -344,6 +337,5 @@ await writeJson(resolve(outputDir, 'provenance.json'), provenance);
 await writeJson(resolve(publicOutputDir, 'provenance.json'), provenance);
 
 console.log(
-  `Generated ${timeZones.length} IANA zones and ${countryCatalog.length} countries `
-    + `(${geometryByCountry.size} with globe geometry).`,
+  `Generated ${timeZones.length} IANA zones and ${countryCatalog.length} countries.`,
 );

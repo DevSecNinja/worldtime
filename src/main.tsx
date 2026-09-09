@@ -4,15 +4,20 @@ import { registerSW } from 'virtual:pwa-register';
 
 import { App } from './app/App';
 import { AppStateProvider } from './app/app-state';
-import { CITY_CACHE_NAME, GLOBE_CACHE_NAME } from './domain/reference-data';
+import { CITY_CACHE_NAME } from './domain/reference-data';
 import { initializeTimeZoneRules } from './domain/temporal';
 import './styles/global.css';
 
-const rulesResponse = await fetch(new URL('data/generated/time-zone-rules.json', document.baseURI));
-if (!rulesResponse.ok) {
-  throw new Error(`Unable to load time-zone rules (${rulesResponse.status}).`);
+const [rulesResponse, aliasesResponse] = await Promise.all([
+  fetch(new URL('data/generated/time-zone-rules.json', document.baseURI)),
+  fetch(new URL('data/generated/time-zone-aliases.json', document.baseURI)),
+]);
+if (!rulesResponse.ok || !aliasesResponse.ok) {
+  throw new Error(
+    `Unable to load time-zone data (${rulesResponse.status}/${aliasesResponse.status}).`,
+  );
 }
-initializeTimeZoneRules(await rulesResponse.json());
+initializeTimeZoneRules(await rulesResponse.json(), await aliasesResponse.json());
 
 if ('caches' in globalThis) {
   void caches.keys().then((cacheNames) =>
@@ -22,7 +27,7 @@ if ('caches' in globalThis) {
           name === 'worldtime-city-search'
           || name === 'worldtime-optional-globe'
           || (name.startsWith('worldtime-city-search-') && name !== CITY_CACHE_NAME)
-          || (name.startsWith('worldtime-optional-globe-') && name !== GLOBE_CACHE_NAME)
+          || name.startsWith('worldtime-optional-globe-')
         )
         .map((name) => caches.delete(name)),
     )

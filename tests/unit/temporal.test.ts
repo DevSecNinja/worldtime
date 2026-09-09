@@ -1,7 +1,10 @@
+import moment from 'moment-timezone';
 import { describe, expect, it } from 'vitest';
 
+import timeZoneAliases from '../../src/data/generated/time-zone-aliases.json';
 import timeZones from '../../src/data/generated/timezones.json';
 import {
+  canonicalTimeZone,
   classifyWallTime,
   createEventPayload,
   formatEventInZone,
@@ -88,5 +91,40 @@ describe('Temporal event conversion', () => {
       sourceOffset: 'Z',
       instant: '2026-01-15T12:00:00Z',
     })).toBe(false);
+  });
+
+  it('canonicalizes legacy IANA aliases before comparison and storage', () => {
+    expect(canonicalTimeZone('Asia/Calcutta')).toBe('Asia/Kolkata');
+    expect(canonicalTimeZone('America/New_York')).toBe('America/New_York');
+    expect(
+      createEventPayload('', '2026-01-15T12:00', 'Asia/Calcutta').sourceTimeZone,
+    ).toBe('Asia/Kolkata');
+  });
+
+  it('maps every generated alias to its authoritative IANA target throughout the supported range', () => {
+    for (const [alias, target] of Object.entries(timeZoneAliases)) {
+      const aliasZone = moment.tz.zone(alias);
+      const targetZone = moment.tz.zone(target);
+      expect(aliasZone, alias).not.toBeNull();
+      expect(targetZone, target).not.toBeNull();
+      for (let year = 1970; year <= 2100; year += 1) {
+        for (const month of [0, 6]) {
+          const instant = Date.UTC(year, month, 15, 12);
+          expect(
+            aliasZone?.utcOffset(instant),
+            `${alias} -> ${target} at ${year}-${String(month + 1).padStart(2, '0')}`,
+          ).toBe(targetZone?.utcOffset(instant));
+        }
+      }
+    }
+  });
+
+  it('does not collapse supported zones with historically different rules', () => {
+    expect(
+      createEventPayload('', '1970-05-01T08:00', 'America/New_York').sourceOffset,
+    ).toBe('-04:00');
+    expect(
+      createEventPayload('', '1970-05-01T08:00', 'America/Detroit').sourceOffset,
+    ).toBe('-05:00');
   });
 });

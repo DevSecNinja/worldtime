@@ -23,8 +23,9 @@ test('search and multi-zone country selection provide exact conversion', async (
   await picker.fill('United States');
   await page.getByRole('option', { name: /United States.*Choose an exact time zone/ }).click();
   await expect(page.getByText('Compared location')).toHaveCount(0);
-  await expect(page.getByText('America/New_York')).toBeVisible();
-  await page.getByRole('button', { name: 'America/New_York' }).click();
+  await expect(page.getByText(/multiple time zones.*Add a city/i)).toBeVisible();
+  await picker.fill('Atlanta U');
+  await page.getByRole('option', { name: /Atlanta, GA, United States.*America\/New_York/ }).click();
   await expect(page.getByText('Compared location')).toBeVisible();
   await expect(page.getByText(/America\/New_York/).first()).toBeVisible();
 });
@@ -41,12 +42,40 @@ test('finds a city directly from the country-or-city field', async ({ page }) =>
   });
   await page.goto(`./#${eventFragment}`);
   await page.getByRole('combobox', { name: 'Country, city, or time zone' }).fill('Seattle');
-  await page.getByRole('option', { name: /Seattle, United States.*America\/Los_Angeles/ }).click();
+  await page.getByRole('option', { name: /Seattle, WA, United States.*America\/Los_Angeles/ })
+    .click();
   await expect(page.getByText('Compared location')).toBeVisible();
   await expect(page.getByText(/America\/Los_Angeles/).first()).toBeVisible();
   expect(cityRequests.some((url) => /\/cities\/se\.json/.test(url))).toBe(true);
   expect(cityRequests.some((url) => /\/cities\/s\.json/.test(url))).toBe(false);
   expect(cityRequests.some((url) => /\/city-prefixes\/s\.json/.test(url))).toBe(true);
+});
+
+test('understands partial country qualifiers and preserves the selected place label', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 840 });
+  await page.goto(`./#${eventFragment}`);
+  await page.getByLabel('Time format').selectOption('h12');
+  const picker = page.getByRole('combobox', { name: 'Country, city, or time zone' });
+  await picker.fill('Atlanta U');
+  const atlanta = page.getByRole('option', {
+    name: /Atlanta, GA, United States.*America\/New_York/,
+  });
+  await expect(atlanta).toBeVisible();
+  await atlanta.click();
+  await expect(picker).toHaveValue('Atlanta, GA, United States');
+  await expect(page.getByText('Atlanta, GA, United States', { exact: true })).toBeVisible();
+  const pickerBox = await picker.boundingBox();
+  const resultBox = await page.getByText('Compared location').boundingBox();
+  expect((resultBox?.y ?? 0) > (pickerBox?.y ?? 0)).toBe(true);
+  expect(
+    await page.locator('.comparison-result').evaluate((element) =>
+      element.scrollWidth <= element.clientWidth
+    ),
+  ).toBe(true);
+  await picker.fill('Atlanta GA');
+  await expect(atlanta).toBeVisible();
+  await picker.fill('Atlanta, GA, United States');
+  await expect(atlanta).toBeVisible();
 });
 
 test('finds a city from the complete GeoNames catalog', async ({ page }) => {
@@ -72,32 +101,7 @@ test('finds a city from the complete GeoNames catalog', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Show more matching cities' })).toBeVisible();
 });
 
-test('keeps search available when the optional globe cannot load', async ({ page, browserName }) => {
-  test.skip(
-    browserName === 'webkit',
-    'Playwright WebKit does not route dynamic module requests reliably.',
-  );
-  await page.route('**/assets/GlobeExplorer-*.js', (route) => route.abort());
-  await page.goto(`./#${eventFragment}`);
-  await page.getByRole('button', { name: 'Open interactive globe' }).click();
-  await expect(page.getByText(/globe could not load/i)).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Country, city, or time zone' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Distributed review' })).toBeVisible();
-});
-
-test('shows the same fallback when globe geometry cannot load', async ({ page, browserName }) => {
-  test.skip(
-    browserName === 'webkit',
-    'Playwright WebKit does not route service-worker-controlled geometry requests.',
-  );
-  await page.route('**/data/generated/countries.geo.json', (route) => route.abort());
-  await page.goto(`./#${eventFragment}`);
-  await page.getByRole('button', { name: 'Open interactive globe' }).click();
-  await expect(page.getByText(/globe could not load/i)).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Country, city, or time zone' })).toBeVisible();
-});
-
-test('browser catalog validates all countries, zones, and geometry mappings', async ({ page }) => {
+test('browser catalog validates all countries, cities, and zones', async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto(`./#${eventFragment}`);
   const audit = await page.evaluate(async () => {
@@ -105,7 +109,6 @@ test('browser catalog validates all countries, zones, and geometry mappings', as
       countryResponse,
       zoneResponse,
       rulesResponse,
-      geometryResponse,
       cityIndex,
     ] = await Promise.all([
       fetch(new URL('data/generated/countries.json', document.baseURI)).then((response) =>
@@ -117,20 +120,12 @@ test('browser catalog validates all countries, zones, and geometry mappings', as
       fetch(new URL('data/generated/time-zone-rules.json', document.baseURI)).then((response) =>
         response.json()
       ),
-      fetch(new URL('data/generated/countries.geo.json', document.baseURI)).then((response) =>
-        response.json()
-      ),
       fetch(new URL('data/generated/cities-index.json', document.baseURI)).then((response) =>
         response.json()
       ),
     ]);
     const browserCountries = countryResponse;
     const browserZones = zoneResponse;
-    const geometryCodes = new Set(
-      geometryResponse.features.map((item: { properties: { alpha2: string; }; }) =>
-        item.properties.alpha2
-      ),
-    );
     const zoneIds = new Set(browserZones.map((zone: { id: string; }) => zone.id));
     const countryCodes = new Set(
       browserCountries.map((country: { alpha2: string; }) => country.alpha2),
@@ -165,11 +160,6 @@ test('browser catalog validates all countries, zones, and geometry mappings', as
           || country.timeZones.some((zone) => !zoneIds.has(zone))
         )
         .map((country: { alpha2: string; }) => country.alpha2),
-      missingGeometry: browserCountries
-        .filter((country: { hasGeometry: boolean; alpha2: string; }) =>
-          country.hasGeometry && !geometryCodes.has(country.alpha2)
-        )
-        .map((country: { alpha2: string; }) => country.alpha2),
       cities: uniqueCities.length,
       invalidCities: uniqueCities
         .filter((city) => !countryCodes.has(city[3]) || !zoneIds.has(city[4]) || !city[1])
@@ -182,7 +172,6 @@ test('browser catalog validates all countries, zones, and geometry mappings', as
   expect(audit.zones).toBe(timeZones.length);
   expect(audit.invalidZones).toEqual([]);
   expect(audit.invalidCountryMappings).toEqual([]);
-  expect(audit.missingGeometry).toEqual([]);
   expect(audit.cities).toBe(cityIndex.total);
   expect(audit.invalidCities).toEqual([]);
 });

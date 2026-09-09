@@ -126,7 +126,7 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
 
       <section className='glass-card form-card' aria-labelledby='event-form-title'>
         <div className='step-label'>
-          <span>01</span> {t('creatorEyebrow')}
+          <span>01</span> {t('eventDetails')}
         </div>
         <h2 id='event-form-title'>{t('createLink')}</h2>
         <div className='field'>
@@ -243,7 +243,6 @@ export function CreateEvent({ onCreated }: { onCreated?: (event: EventPayload) =
             onClose={() => setShowLocation(false)}
             onTimeZoneSelect={(value) => {
               setTimeZone(value);
-              setShowLocation(false);
               resetResolution();
             }}
           />

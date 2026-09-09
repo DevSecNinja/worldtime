@@ -53,4 +53,18 @@ describe('city search', () => {
     expect(page.results.some((city) => city.name === 'Santa Cruz' && city.countryCode === 'CR'))
       .toBe(true);
   });
+
+  it('accepts the rendered administrative-area and country qualifier', async () => {
+    const records = JSON.parse(
+      await readFile(resolve(process.cwd(), 'public/data/generated/cities/at.json'), 'utf8'),
+    ) as CityRecord[];
+    for (const query of ['Atlanta GA', 'Atlanta, GA, United States']) {
+      const page = searchCityRecords(records, query, 'en', 50);
+      expect(
+        page.results.some((city) =>
+          city.name === 'Atlanta' && city.countryCode === 'US' && city.adminArea === 'GA'
+        ),
+      ).toBe(true);
+    }
+  });
 });

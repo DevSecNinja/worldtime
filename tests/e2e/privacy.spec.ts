@@ -30,6 +30,7 @@ test('coordinates remain local until separate country-lookup consent', async ({ 
   await expect(page.getByText(/Europe\/Amsterdam/).first()).toBeVisible();
   expect(requests.filter((url) => url.includes('nominatim'))).toHaveLength(0);
 
+  await page.getByRole('button', { name: 'Europe/Amsterdam' }).click();
   await expect(page.getByText('Want a country name too?')).toBeVisible();
   await expect(page.getByText('Only after you agree, we ask OpenStreetMap')).toBeVisible();
   await page.getByText('What is shared?').click();
@@ -68,6 +69,7 @@ test('country lookup never overrides a different local time-zone candidate', asy
   await page.getByRole('option', { name: /Use my location/ }).click();
   await page.getByRole('button', { name: 'Enable location services' }).click();
   await expect(page.getByText('America/Los_Angeles')).toBeVisible();
+  await page.getByRole('button', { name: 'America/Los_Angeles' }).click();
   await page.getByRole('button', { name: /look up country/ }).click();
   await expect(page.getByText('Netherlands (NL)')).toBeVisible();
   await expect(page.getByText('America/Los_Angeles')).toBeVisible();
@@ -82,10 +84,24 @@ test('country lookup uses action-specific loading and failure messages', async (
   await page.getByRole('combobox', { name: 'Event time zone' }).click();
   await page.getByRole('option', { name: /Use my location/ }).click();
   await page.getByRole('button', { name: 'Enable location services' }).click();
+  await page.getByRole('button', { name: 'Europe/Amsterdam' }).click();
   await page.getByRole('button', { name: /look up country/ }).click();
   await expect(page.getByRole('button', { name: 'Looking up the country…' })).toBeVisible();
   await expect(page.getByText('The country lookup failed. Time-zone search still works.'))
     .toBeVisible();
+});
+
+test('country lookup can be declined without losing the selected time zone', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('combobox', { name: 'Event time zone' }).click();
+  await page.getByRole('option', { name: /Use my location/ }).click();
+  await page.getByRole('button', { name: 'Enable location services' }).click();
+  await page.getByRole('button', { name: 'Europe/Amsterdam' }).click();
+  await page.getByRole('button', { name: 'No thanks' }).click();
+  await expect(page.getByText('Want a country name too?')).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Event time zone' })).toHaveValue(
+    'Europe/Amsterdam',
+  );
 });
 
 test('Dutch and theme choices reset after a refresh', async ({ page }) => {

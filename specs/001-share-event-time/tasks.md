@@ -29,8 +29,8 @@ required by every user story.
 
 - [x] T005 Implement reproducible country/time-zone generation with provenance in
       scripts/generate-reference-data.mjs
-- [x] T006 Generate and commit country, city, time-zone, geometry, and provenance artifacts under
-      src/data/generated/ and public/data/generated/
+- [x] T006 Generate country, city, time-zone, and provenance artifacts for the immutable data
+      release
 - [x] T007 [P] Add reviewed fuzzy aliases including `ams` in src/data/aliases.ts
 - [x] T008 [P] Implement typed English and Dutch resources in src/i18n/en.ts, src/i18n/nl.ts, and
       src/i18n/index.ts
@@ -98,21 +98,20 @@ date boundaries, source context, and error recovery.
 
 ## Phase 5: User Story 3 - Explore Another Location (Priority: P2)
 
-**Goal**: Compare the event in any supported location by accessible search or optional interactive
-globe.
+**Goal**: Compare the event in any supported location through one accessible search.
 
-**Independent Test**: Choose single- and multi-zone countries through both paths and verify explicit
-zone selection.
+**Independent Test**: Choose cities plus single- and multi-zone countries and verify explicit zone
+selection.
 
-- [x] T026 [P] [US3] Add complete country/city/zone reachability and globe mapping tests in
+- [x] T026 [P] [US3] Add complete country/city/zone reachability tests in
       tests/unit/reference-data.test.ts and tests/unit/city-search.test.ts
 - [x] T027 [US3] Implement country and comparison-zone selection in
       src/features/event-viewer/LocationExplorer.tsx
-- [x] T028 [US3] Implement a lazy, self-hosted, reduced-motion-aware globe in
-      src/features/globe/GlobeExplorer.tsx
-- [x] T029 [US3] Add search/globe equivalence E2E coverage in tests/e2e/location-explorer.spec.ts
+- [x] T028 [US3] Consolidate location comparison into a single search interaction in
+      src/features/event-viewer/LocationExplorer.tsx
+- [x] T029 [US3] Add complete search E2E coverage in tests/e2e/location-explorer.spec.ts
 
-**Checkpoint**: Globe and accessible search provide equivalent conversion capability.
+**Checkpoint**: Accessible search provides complete location conversion capability.
 
 ---
 
@@ -184,8 +183,8 @@ caches for public assets only.
       coverage
 - [x] T048 Expand the primary event-viewer location field to country and city search in
       src/features/event-viewer/LocationExplorer.tsx
-- [x] T049 Display a globe preview by default while preserving on-demand interaction, close control,
-      and fallback behavior
+- [x] T049 Preserve the experimental globe implementation on the dedicated Globe redesign branch and
+      remove it from the release scope
 - [x] T050 Consolidate country, city, and IANA zone lookup into
       src/features/timezone-picker/TimeZonePicker.tsx
 - [x] T051 Move location services behind the highlighted first picker option and simplify consent
@@ -205,6 +204,10 @@ caches for public assets only.
 - [x] T058 Add reference-data SHA-based cache busting and document the application, Workbox, and
       data-release update layers
 - [x] T059 Address all open pull-request review threads and remove obsolete large tracked files
+- [x] T060 Apply the independent UX review recommendations for mobile hierarchy, result placement,
+      place-label retention, multi-zone refinement, consent timing, and landmarks
+- [x] T061 Remove globe code, dependencies, geometry data, and tests from the release branch while
+      preserving the implementation in the dedicated Globe redesign worktree
 
 ---
 
@@ -231,7 +234,7 @@ caches for public assets only.
 
 1. Complete setup and generated-data integrity first.
 2. Deliver User Stories 1 and 2 as the deployable MVP.
-3. Add accessible location exploration before the globe enhancement.
+3. Add accessible unified location exploration.
 4. Add geolocation only after the complete manual path works.
 5. Add offline and personalization behavior, then run the full catalog and privacy gates.
 

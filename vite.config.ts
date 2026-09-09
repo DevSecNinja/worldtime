@@ -22,35 +22,10 @@ export default defineConfig({
         navigateFallback: 'index.html',
         globPatterns: ['**/*.{html,css,js,svg,json,webmanifest}'],
         globIgnores: [
-          '**/GlobeExplorer-*.js',
-          '**/globe-*.js',
-          'data/generated/countries.geo.json',
           'data/generated/cities/*.json',
           'data/generated/city-prefixes/*.json',
         ],
         runtimeCaching: [
-          {
-            urlPattern: /\/assets\/(?:GlobeExplorer|globe)-[^/]+\.js$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: `worldtime-optional-globe-${referenceDataVersion}`,
-              expiration: {
-                maxEntries: 4,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
-              },
-            },
-          },
-          {
-            urlPattern: /\/data\/generated\/countries\.geo\.json$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: `worldtime-optional-globe-${referenceDataVersion}`,
-              expiration: {
-                maxEntries: 2,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
-              },
-            },
-          },
           {
             urlPattern: /\/data\/generated\/(?:cities|city-prefixes)\/[^/]+\.json$/,
             handler: 'CacheFirst',

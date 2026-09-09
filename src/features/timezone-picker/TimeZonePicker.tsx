@@ -18,6 +18,7 @@ interface TimeZonePickerProps {
   autoFocus?: boolean;
   includeCountries?: boolean;
   onRequestLocation?: () => void;
+  onSelectionLabelChange?: (label: string) => void;
 }
 
 type PickerOption =
@@ -51,6 +52,7 @@ export function TimeZonePicker({
   autoFocus = false,
   includeCountries = false,
   onRequestLocation,
+  onSelectionLabelChange,
 }: TimeZonePickerProps) {
   const generatedId = useId();
   const inputId = id ?? `timezone-${generatedId}`;
@@ -65,6 +67,7 @@ export function TimeZonePicker({
   const [cityLimit, setCityLimit] = useState(12);
   const [selectedCountryCode, setSelectedCountryCode] = useState('');
   const userClearedSelection = useRef(false);
+  const pendingDisplayLabel = useRef('');
   const zoneResults = useMemo(() => searchTimeZones(query, 8), [query]);
   const countryResults = useMemo(
     () => includeCountries ? searchCountries(query, locale, 5) : [],
@@ -72,44 +75,63 @@ export function TimeZonePicker({
   );
   const selectedCountry = getCountry(selectedCountryCode);
 
-  const options = useMemo<PickerOption[]>(() => [
-    ...(onRequestLocation && !query
-      ? [{
-        kind: 'location' as const,
-        key: 'location' as const,
-        title: t('locationTitle'),
-        subtitle: t('locationOptionHint'),
-      }]
-      : []),
-    ...countryResults.map((country) => ({
-      kind: 'country' as const,
-      key: `country-${country.alpha2}`,
-      countryCode: country.alpha2,
-      title: country.names[locale],
-      subtitle: country.timeZones.length > 1
-        ? t('countryNeedsZone')
-        : country.timeZones[0] ?? t('manualCountryZone'),
-    })),
-    ...zoneResults.map((zone) => ({
-      kind: 'place' as const,
-      key: `zone-${zone.id}`,
-      timeZone: zone.id,
-      title: zone.id,
-      subtitle: [
-        zone.cities.slice(0, 3).join(', '),
-        countryNamesForZone(zone, locale),
-      ].filter(Boolean).join(' · '),
-    })),
-    ...cityResults.map((city) => ({
-      kind: 'place' as const,
-      key: `city-${city.id}`,
-      timeZone: city.timeZone,
-      title: `${city.name}, ${city.countryName}`,
-      subtitle: city.timeZone,
-    })),
-  ], [cityResults, countryResults, locale, onRequestLocation, query, t, zoneResults]);
+  const options = useMemo<PickerOption[]>(() => {
+    const placeOptions = [
+      ...cityResults.map((city) => {
+        const area = city.countryCode === 'US' ? city.adminArea : '';
+        return {
+          kind: 'place' as const,
+          key: `city-${city.id}`,
+          timeZone: city.timeZone,
+          title: [city.name, area, city.countryName].filter(Boolean).join(', '),
+          subtitle: `${t('cityResult')} · ${city.timeZone}`,
+        };
+      }),
+      ...zoneResults.map((zone) => ({
+        kind: 'place' as const,
+        key: `zone-${zone.id}`,
+        timeZone: zone.id,
+        title: zone.id,
+        subtitle: [
+          t('timeZoneResult'),
+          zone.cities.slice(0, 3).join(', '),
+          countryNamesForZone(zone, locale),
+        ].filter(Boolean).join(' · '),
+      })),
+    ];
+    const deduplicatedPlaces = [
+      ...new Map(
+        placeOptions.map((option) => [`${option.title}|${option.timeZone}`, option]),
+      ).values(),
+    ];
+    return [
+      ...(onRequestLocation && !query
+        ? [{
+          kind: 'location' as const,
+          key: 'location' as const,
+          title: t('locationTitle'),
+          subtitle: t('locationOptionHint'),
+        }]
+        : []),
+      ...countryResults.map((country) => ({
+        kind: 'country' as const,
+        key: `country-${country.alpha2}`,
+        countryCode: country.alpha2,
+        title: country.names[locale],
+        subtitle: country.timeZones.length > 1
+          ? t('countryNeedsZone')
+          : `${t('countryResult')} · ${country.timeZones[0] ?? t('manualCountryZone')}`,
+      })),
+      ...deduplicatedPlaces,
+    ];
+  }, [cityResults, countryResults, locale, onRequestLocation, query, t, zoneResults]);
 
   useEffect(() => {
+    if (pendingDisplayLabel.current && value) {
+      setQuery(pendingDisplayLabel.current);
+      pendingDisplayLabel.current = '';
+      return;
+    }
     if (userClearedSelection.current && !value) {
       userClearedSelection.current = false;
       return;
@@ -137,11 +159,13 @@ export function TimeZonePicker({
     };
   }, [cityLimit, locale, query]);
 
-  const chooseTimeZone = (timeZone: string) => {
+  const chooseTimeZone = (timeZone: string, displayLabel = timeZone) => {
     userClearedSelection.current = false;
+    pendingDisplayLabel.current = displayLabel;
     setSelectedCountryCode('');
     onChange(timeZone);
-    setQuery(timeZone);
+    onSelectionLabelChange?.(displayLabel);
+    setQuery(displayLabel);
     setOpen(false);
   };
 
@@ -158,14 +182,14 @@ export function TimeZonePicker({
       setQuery(country.names[locale]);
       setOpen(false);
       if (country.timeZones.length === 1) {
-        chooseTimeZone(country.timeZones[0]);
+        chooseTimeZone(country.timeZones[0], country.names[locale]);
       } else {
         userClearedSelection.current = true;
         onChange('');
       }
       return;
     }
-    chooseTimeZone(option.timeZone);
+    chooseTimeZone(option.timeZone, option.title);
   };
 
   return (
@@ -231,6 +255,7 @@ export function TimeZonePicker({
               id={`${inputId}-option-${index}`}
               key={option.key}
               role='option'
+              aria-label={`${option.title} ${option.subtitle}`}
               aria-selected={option.kind === 'place' && option.timeZone === value}
               className={[
                 index === activeIndex ? 'active' : '',
@@ -263,21 +288,7 @@ export function TimeZonePicker({
         </ul>
       )}
       {selectedCountry && selectedCountry.timeZones.length > 1 && (
-        <div className='country-zone-choice'>
-          <p>{t('chooseTimeZone')}</p>
-          <div className='chip-row'>
-            {selectedCountry.timeZones.map((zone) => (
-              <button
-                className='chip'
-                type='button'
-                key={zone}
-                onClick={() => chooseTimeZone(zone)}
-              >
-                {zone}
-              </button>
-            ))}
-          </div>
-        </div>
+        <p className='status country-refine'>{t('countryRefine')}</p>
       )}
       {selectedCountry?.requiresManualTimeZone && (
         <p className='status warning'>{t('manualCountryZone')}</p>
