@@ -1,0 +1,118 @@
+---
+name: Reference Data
+
+on:
+  schedule:
+    - cron: "0 5 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reference-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update GeoNames snapshot
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for a new GeoNames snapshot
+        id: city-update
+        run: npm run data:update:cities
+
+      - name: Regenerate and package reference data
+        if: steps.city-update.outputs.changed == 'true'
+        run: |
+          npm run data:generate
+          npm run test:run
+          npm run data:package
+
+      - name: Publish reference-data release
+        if: steps.city-update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_DATE: ${{ steps.city-update.outputs.date }}
+        run: |-
+          release_tag="$(node -p "require('./reference-data.json').releaseTag")"
+          asset_name="$(node -p "require('./reference-data.json').assetName")"
+          expected_sha="$(node -p "require('./reference-data.json').sha256")"
+          asset_path=".cache/reference-data/${asset_name}"
+
+          if gh release view "${release_tag}" >/dev/null 2>&1; then
+            mkdir -p .cache/published-reference-data
+            gh release download "${release_tag}" \
+              --pattern "${asset_name}" \
+              --dir .cache/published-reference-data
+            published_sha="$(sha256sum ".cache/published-reference-data/${asset_name}" | awk '{print $1}')"
+            if [ "${published_sha}" != "${expected_sha}" ]; then
+              echo "::error::Immutable reference-data release ${release_tag} has an unexpected checksum."
+              exit 1
+            fi
+            echo "Verified existing immutable reference-data release ${release_tag}."
+          else
+            gh release create "${release_tag}" "${asset_path}" \
+              --title "Reference data ${RELEASE_DATE}" \
+              --notes "Checksummed Worldtime reference data generated from the pinned upstream sources." \
+              --prerelease
+          fi
+
+      - name: Create or update data pull request
+        if: steps.city-update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |-
+          if git diff --quiet; then
+            echo "GeoNames and generated artifacts are already current."
+            exit 0
+          fi
+
+          branch="automation/update-geonames"
+          remote_sha="$(git ls-remote --heads origin "refs/heads/${branch}" | awk '{print $1}')"
+          git config user.name "DevSecNinja Release Please"
+          git config user.email "3563533+devsecninja-release-please[bot]@users.noreply.github.com"
+          gh auth setup-git
+          git checkout -b "${branch}"
+          git add data/upstream/manifest.json reference-data.json
+          git commit -m "chore(data): update GeoNames city snapshot"
+
+          if [ -n "${remote_sha}" ]; then
+            git push \
+              --force-with-lease="refs/heads/${branch}:${remote_sha}" \
+              origin "HEAD:${branch}"
+          else
+            git push origin "HEAD:${branch}"
+          fi
+
+          if [ -z "$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create \
+              --base main \
+              --head "${branch}" \
+              --title "chore(data): update GeoNames city snapshot" \
+              --body "Refreshes the vendored GeoNames cities500 snapshot and reproducibly regenerates the city search artifacts. The updater first performs a conditional metadata request and downloads the archive only when the upstream ETag or Last-Modified value changes."
+          fi
