@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { useAppState } from '../../app/app-state';
 import {
@@ -22,9 +22,12 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
   const [selectedTimeZone, setSelectedTimeZone] = useState('');
   const [showCountryLookup, setShowCountryLookup] = useState(true);
   const [lookupStatus, setLookupStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const locatingRef = useRef(false);
+  const lookupRef = useRef(false);
 
   const locate = async () => {
-    if (status === 'locating') return;
+    if (locatingRef.current) return;
+    locatingRef.current = true;
     setStatus('locating');
     setCountry(null);
     setSelectedTimeZone('');
@@ -37,15 +40,18 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
     } catch {
       setResult(null);
       setStatus('error');
+    } finally {
+      locatingRef.current = false;
     }
   };
 
   const lookupCountry = async () => {
-    if (!result || lookupStatus === 'loading') return;
+    if (!result || lookupRef.current) return;
     if (!navigator.onLine) {
       setLookupStatus('error');
       return;
     }
+    lookupRef.current = true;
     setLookupStatus('loading');
     try {
       const lookup = await reverseGeocodeCountry(result.coordinates, locale);
@@ -53,6 +59,8 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
       setLookupStatus('idle');
     } catch {
       setLookupStatus('error');
+    } finally {
+      lookupRef.current = false;
     }
   };
 

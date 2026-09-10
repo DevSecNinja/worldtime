@@ -76,8 +76,14 @@ test('country lookup never overrides a different local time-zone candidate', asy
 });
 
 test('country lookup uses action-specific loading and failure messages', async ({ page, context }) => {
+  let releaseLookup!: () => void;
+  const lookupGate = new Promise<void>((resolve) => {
+    releaseLookup = resolve;
+  });
+  let lookupRequests = 0;
   await context.route('https://nominatim.openstreetmap.org/**', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    lookupRequests += 1;
+    await lookupGate;
     await route.fulfill({ status: 503, body: 'Unavailable' });
   });
   await page.goto('./');
@@ -85,8 +91,13 @@ test('country lookup uses action-specific loading and failure messages', async (
   await page.getByRole('option', { name: /Use my location/ }).click();
   await page.getByRole('button', { name: 'Enable location services' }).click();
   await page.getByRole('button', { name: 'Europe/Amsterdam' }).click();
-  await page.getByRole('button', { name: /look up country/ }).click();
+  await page.getByRole('button', { name: /look up country/ }).evaluate((button) => {
+    (button as HTMLButtonElement).click();
+    (button as HTMLButtonElement).click();
+  });
   await expect(page.getByRole('button', { name: 'Looking up the country…' })).toBeDisabled();
+  await expect.poll(() => lookupRequests).toBe(1);
+  releaseLookup();
   await expect(page.getByText('The country lookup failed. Time-zone search still works.'))
     .toBeVisible();
 });
