@@ -95,9 +95,12 @@ test('country lookup uses action-specific loading and failure messages', async (
     (button as HTMLButtonElement).click();
     (button as HTMLButtonElement).click();
   });
-  await expect(page.getByRole('button', { name: 'Looking up the country…' })).toBeDisabled();
-  await expect.poll(() => lookupRequests).toBe(1);
-  releaseLookup();
+  try {
+    await expect(page.getByRole('button', { name: 'Looking up the country…' })).toBeDisabled();
+    await expect.poll(() => lookupRequests).toBe(1);
+  } finally {
+    releaseLookup();
+  }
   await expect(page.getByText('The country lookup failed. Time-zone search still works.'))
     .toBeVisible();
 });
