@@ -86,7 +86,7 @@ jobs:
       # renovate: datasource=node-version depName=node
       node-version: "24"
       # renovate: datasource=npm depName=wrangler
-      wrangler-version: "4.128.0"
+      wrangler-version: "4.130.0"
       artifact-path: dist
       artifact-name: worldtime-site
       install-command: ""
