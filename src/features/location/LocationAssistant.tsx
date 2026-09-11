@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { useAppState } from '../../app/app-state';
 import {
@@ -22,8 +22,12 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
   const [selectedTimeZone, setSelectedTimeZone] = useState('');
   const [showCountryLookup, setShowCountryLookup] = useState(true);
   const [lookupStatus, setLookupStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const locatingRef = useRef(false);
+  const lookupRef = useRef(false);
 
   const locate = async () => {
+    if (locatingRef.current) return;
+    locatingRef.current = true;
     setStatus('locating');
     setCountry(null);
     setSelectedTimeZone('');
@@ -36,15 +40,18 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
     } catch {
       setResult(null);
       setStatus('error');
+    } finally {
+      locatingRef.current = false;
     }
   };
 
   const lookupCountry = async () => {
-    if (!result) return;
+    if (!result || lookupRef.current) return;
     if (!navigator.onLine) {
       setLookupStatus('error');
       return;
     }
+    lookupRef.current = true;
     setLookupStatus('loading');
     try {
       const lookup = await reverseGeocodeCountry(result.coordinates, locale);
@@ -52,6 +59,8 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
       setLookupStatus('idle');
     } catch {
       setLookupStatus('error');
+    } finally {
+      lookupRef.current = false;
     }
   };
 
@@ -67,7 +76,12 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
       </div>
       <div className='details-body'>
         <p>{t('locationIntro')}</p>
-        <button className='button secondary' type='button' onClick={locate}>
+        <button
+          className='button secondary'
+          type='button'
+          onClick={locate}
+          disabled={status === 'locating'}
+        >
           {status === 'locating' ? t('locating') : t('enableLocation')}
         </button>
         {status === 'error' && <p className='status error' role='status'>{t('locationError')}</p>}
@@ -102,7 +116,12 @@ export function LocationAssistant({ onTimeZoneSelect, onClose }: LocationAssista
                   ±{Math.round(result.coordinates.accuracyMeters)} m
                 </p>
                 <div className='button-row'>
-                  <button className='button secondary' type='button' onClick={lookupCountry}>
+                  <button
+                    className='button secondary'
+                    type='button'
+                    onClick={lookupCountry}
+                    disabled={lookupStatus === 'loading'}
+                  >
                     {lookupStatus === 'loading' ? t('countryLookupLoading') : t('lookupCountry')}
                   </button>
                   <button
