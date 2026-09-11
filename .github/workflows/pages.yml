@@ -78,7 +78,9 @@ jobs:
     permissions:
       contents: read
       deployments: write # Records Cloudflare production and preview deployments.
+      id-token: write # Required when validating the reusable GitHub Pages job.
       issues: write # Updates the Cloudflare preview comment.
+      pages: write # Required when validating the reusable GitHub Pages job.
       pull-requests: write # Updates the Cloudflare preview comment.
     with:
       # renovate: datasource=node-version depName=node
@@ -92,6 +94,7 @@ jobs:
       cloudflare-preview: true
       cloudflare-production: true
       cloudflare-project-name: worldtime
+      cloudflare-custom-domain: worldtime.ravensberg.org
     secrets:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
