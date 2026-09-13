@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/DevSecNinja/worldtime/compare/v0.1.0...v0.1.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **deps:** update react monorepo to v19.3.0 [automerge] ([#24](https://github.com/DevSecNinja/worldtime/issues/24)) ([7abf8f2](https://github.com/DevSecNinja/worldtime/commit/7abf8f217e246f81a17b40b3796ddc608a980a10))
+
 ## 0.1.0 (2026-09-11)
 
 
