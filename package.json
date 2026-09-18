@@ -30,7 +30,7 @@
     "fuse.js": "7.5.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "temporal-polyfill": "1.0.4"
+    "temporal-polyfill": "1.0.5"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
