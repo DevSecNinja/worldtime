@@ -43,7 +43,7 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
     "@vitest/coverage-v8": "4.1.11",
-    "@vvo/tzdb": "6.198.0",
+    "@vvo/tzdb": "6.201.1",
     "cldr-localenames-full": "48.2.0",
     "fast-check": "4.10.2",
     "fflate": "0.8.3",
