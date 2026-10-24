@@ -28,8 +28,8 @@
   "dependencies": {
     "@photostructure/tz-lookup": "11.6.1",
     "fuse.js": "7.5.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "temporal-polyfill": "1.0.6"
   },
   "devDependencies": {
