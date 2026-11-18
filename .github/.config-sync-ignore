@@ -1,0 +1,6 @@
+# Paths config-sync must not overwrite (one per line, relative to the repo root).
+# Blank lines and `#` comments are allowed.
+
+# TypeScript/CSS project formatting differs from the central defaults (#31).
+dprint.json
+.editorconfig

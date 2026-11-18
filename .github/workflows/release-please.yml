@@ -16,11 +16,9 @@ concurrency:
 
 jobs:
   release-please:
-    uses: DevSecNinja/.github/.github/workflows/release-please.yml@24acc67adf1be33089e73b2fdbdb4be8c12d145b # v3.2.0
+    uses: DevSecNinja/.github/.github/workflows/release-please.yml@231c380d4f75486e159ed2e3d806bc76ff193a43 # v4.7.0
     permissions:
       contents: write # Creates release branches, commits, tags, and releases.
       pull-requests: write # Opens and updates the release pull request.
-    with:
-      app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
     secrets:
-      app-private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+      AUTOMATION_APP_PRIVATE_KEY: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
