@@ -6,7 +6,7 @@ export function AppHeader() {
 
   return (
     <header className='app-header'>
-      <a className='brand' href='./' aria-label={t('appName')}>
+      <a className='brand' href='./'>
         <span className='brand-mark' aria-hidden='true'>
           <span />
         </span>
