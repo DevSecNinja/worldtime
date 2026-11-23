@@ -40,7 +40,14 @@ jobs:
         run: npm run check
 
       - name: Run unit and integration tests
-        run: npm test
+        run: npm run test:run -- --reporter=default --reporter=junit --outputFile.junit=test-results.xml
+
+      - name: Publish test results
+        if: always()
+        uses: DevSecNinja/.github/actions/test-report@5452dbd33d61b4fc58b1780f57e0b60ff131be75 # v4.10.0
+        with:
+          paths: test-results.xml
+          title: vitest
 
       - name: Build production PWA
         run: npm run build
