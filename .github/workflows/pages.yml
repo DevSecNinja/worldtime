@@ -74,7 +74,7 @@ jobs:
 
   pages:
     needs: build
-    uses: DevSecNinja/.github/.github/workflows/pages.yml@24acc67adf1be33089e73b2fdbdb4be8c12d145b # v3.2.0
+    uses: DevSecNinja/.github/.github/workflows/pages.yml@41e3b01e616e58f1893d4a974c0565bb1006c42c # v4.12.1
     permissions:
       contents: read
       deployments: write # Records Cloudflare production and preview deployments.
