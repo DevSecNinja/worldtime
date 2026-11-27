@@ -44,7 +44,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "@vitest/coverage-v8": "4.1.11",
     "@vvo/tzdb": "6.201.1",
-    "cldr-localenames-full": "48.2.0",
+    "cldr-localenames-full": "49.0.0",
     "fast-check": "4.10.2",
     "fflate": "0.8.3",
     "i18n-iso-countries": "7.14.0",
